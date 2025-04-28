@@ -19,6 +19,7 @@ const add = async (req, res) => {
     let latestConsume = await CanteenInventoryConsume.findOne({
       productName,
       createdBy: req.params.id,
+      deleted: false,
     }).sort({ date: -1 });
     console.log("latestConsume===>", latestConsume);
 
@@ -107,75 +108,143 @@ const view = async (req, res) => {
 
 const edit = async (req, res) => {
   console.log("on edit consume quantity id =>", req.params.id);
-  try {
-    const currentConsumeQut = await CanteenInventoryConsume.findById(
-      req.params.id
-    );
-    console.log("currentConsumeQut  ==> ", currentConsumeQut);
+  const { productName, quantity, date } = req.body;
 
-    const purchaseData = await CanteenInventoryPurches.findOne({
-      productName: req.body.productName,
-      createdBy: currentConsumeQut.createdBy,
+  const currentEntry = await CanteenInventoryConsume.findById(req.params.id);
+
+  const previousEntry = await CanteenInventoryConsume.findOne({
+    productId: currentEntry.productId,
+    createdAt: { $lt: currentEntry.createdAt },
+    deleted: false,
+  }).sort({ createdAt: -1 }); // Sort descending to get the most recent before the current one
+
+  if (previousEntry) {
+    if (quantity > previousEntry.remaning) {
+      return res.status(400).json({
+        message: "Consume quantity cannot be greater than remaining quantity.",
+      });
+    } else {
+      let remaning = previousEntry.remaning - Number(quantity);
+      console.log("remaning => ", remaning);
+
+      const updatedEntry = await CanteenInventoryConsume.findByIdAndUpdate(
+        req.params.id,
+        {
+          $set: {
+            quantity: quantity,
+            remaning: remaning,
+            date: date,
+          },
+        },
+        { new: true }
+      );
+      console.log("updatedEntry==>", updatedEntry);
+      res.status(200).json({ message: messages.DATA_UPDATED_SUCCESS });
+    }
+  } else {
+    let purchaseData = await CanteenInventoryPurches.findOne({
+      productName: productName,
+      createdBy: currentEntry.createdBy,
     });
-    console.log("purchaseData  ==> ", purchaseData);
+    console.log("purchaseData  ======> ", purchaseData);
 
     const purchaseQuantity = purchaseData.quantity;
     console.log("purchaseQuantity => ", purchaseQuantity);
 
-    if (
-      Number(req.body.quantity) > purchaseQuantity ||
-      Number(req.body.quantity) > currentConsumeQut.remaning
-    ) {
+    if (Number(quantity) > purchaseQuantity) {
       return res.status(205).json({
         message:
           "Consume quantity cannot be greater than remaining or purchase quantity.",
       });
     }
 
-    let remqut;
-    if (Number(req.body.quantity) > currentConsumeQut.quantity) {
-      let diff = Number(req.body.quantity) - currentConsumeQut.quantity;
-      console.log(
-        "diff => when consume quatity grater then current consume quanity =>",
-        diff
-      );
+    let remaning = purchaseQuantity - Number(quantity);
+    console.log("remaning => ", remaning);
 
-      remqut = currentConsumeQut.remaning - diff;
-      console.log(
-        "remqut => when consume quatity grater then current consume quanity =>",
-        remqut
-      );
-    } else {
-      let diff = currentConsumeQut.quantity - Number(req.body.quantity);
-      console.log(
-        "diff => when consume quatity less then current consume quanity =>",
-        diff
-      );
-
-      remqut = currentConsumeQut.remaning + diff;
-      console.log(
-        "remqut => when consume quatity less then current consume quanity =>",
-        remqut
-      );
-    }
-
-    let result = await CanteenInventoryConsume.updateOne(
-      { _id: req.params.id },
+    const updatedEntry = await CanteenInventoryConsume.findByIdAndUpdate(
+      req.params.id,
       {
         $set: {
-          quantity: req.body.quantity,
-          remaning: remqut,
-          date: req.body.date,
+          quantity: quantity,
+          remaning: remaning,
+          date: date,
         },
-      }
+      },
+      { new: true }
     );
-
-    console.log("result==>", result);
-    res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
-  } catch (error) {
-    console.log("Error Found ==>", error);
-    res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+    console.log("updatedEntry==>", updatedEntry);
+    res.status(200).json({ message: messages.DATA_UPDATED_SUCCESS });
   }
+
+  // try {
+  //   const currentConsumeQut = await CanteenInventoryConsume.findById(
+  //     req.params.id
+  //   );
+  //   console.log("currentConsumeQut  =====> ", currentConsumeQut);
+
+  //   const purchaseData = await CanteenInventoryPurches.findOne({
+  //     productName: req.body.productName,
+  //     createdBy: currentConsumeQut.createdBy,
+  //   });
+  //   console.log("purchaseData  ======> ", purchaseData);
+
+  //   const purchaseQuantity = purchaseData.quantity;
+  //   console.log("purchaseQuantity => ", purchaseQuantity);
+
+  //   if (
+  //     Number(req.body.quantity) > purchaseQuantity ||
+  //     Number(req.body.quantity) > currentConsumeQut.remaning
+  //   ) {
+  //     return res.status(205).json({
+  //       message:
+  //         "Consume quantity cannot be greater than remaining or purchase quantity.",
+  //     });
+  //   }
+
+  //   let remqut;
+  //   if (Number(req.body.quantity) > currentConsumeQut.quantity) {
+  //     let diff = Number(req.body.quantity) - currentConsumeQut.quantity;
+  //     console.log(
+  //       "diff => when consume quatity grater then current consume quanity =>",
+  //       diff
+  //     );
+
+  //     remqut = currentConsumeQut.remaning - diff;
+  //     console.log(
+  //       "remqut => when consume quatity grater then current consume quanity =>",
+  //       remqut
+  //     );
+  //   } else {
+  //     let diff = currentConsumeQut.quantity - Number(req.body.quantity);
+  //     console.log(
+  //       "diff => when consume quatity less then current consume quanity =>",
+  //       diff
+  //     );
+
+  //     remqut = diff;
+  //     console.log(
+  //       "remqut => when consume quatity less then current consume quanity =>",
+  //       remqut
+  //     );
+  //   }
+
+  //   let result = await CanteenInventoryConsume.updateOne(
+  //     { _id: req.params.id },
+  //     {
+  //       $set: {
+  //         quantity: req.body.quantity,
+  //         remaning: remqut,
+  //         date: req.body.date,
+  //       },
+  //     }
+  //   );
+
+  //   console.log("result==>", result);
+  //   res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
+  // } catch (error) {
+  //   console.log("Error Found ==>", error);
+  //   res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+  // }
 };
 
 const deleteData = async (req, res) => {

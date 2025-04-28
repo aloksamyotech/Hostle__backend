@@ -11,7 +11,8 @@ const CanteenInventoryConsumeSchema = new mongoose.Schema({
     createdBy     : {
         type: mongoose.Schema.ObjectId,
         ref:  User
-    } 
+    } ,
+    createdAt   : { type : Date, default : Date.now },
 }); 
 
 export default mongoose.model('CanteenInventoryConsume',CanteenInventoryConsumeSchema);
