@@ -53,7 +53,7 @@ const storageRoomImg = multer.diskStorage({
         cb(null, file.originalname);
     },
 });
-export const RoomImage = multer({storage : storageRoomImg}).array('roomphoto', 10);
+export const RoomImage = multer({storage : storageRoomImg}).array('roomPhotos', 10);
 
 
 const storageForAadharImg = multer.diskStorage({

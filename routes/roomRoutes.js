@@ -13,4 +13,6 @@ router.delete('/deleteData/:id',  room.deleteData);
 
 router.get('/alRooms',room.countRooms);
 router.get('/calculate-beds', room.calculateBeds);
+
+router.get("/get_roomdata/:hostelId/:roomId",room.roomData); 
 export default router;

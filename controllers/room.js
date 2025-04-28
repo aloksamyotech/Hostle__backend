@@ -2,68 +2,63 @@ import messages from "../constants/message.js";
 import Room from "../model/Room.js";
 import User from "../model/User.js";
 import Hostel from "../model/Hostel.js";
+import RoomType from "../model/RoomType.js";
 
 const add = async (req, res) => {
-  console.log("In room controller..");
-  console.log("Req Id =>", req.params.id);
-  console.log("Req Data =>", req.body);
-  console.log("Req File Data =>", req.files);
-
+  console.log("In add ----------------->");
   try {
-    const { roomNumber, roomType } = req.body;
+    const createdBy = req.params.id;
+    const { roomCategory, roomType, roomNumber, noOfBeds, roomPrice } =
+      req.body;
 
-    const fileNames = req.files.map((file) => file.filename);
-    console.log("fileNames==>", fileNames);
+    console.log(" this is req.body :", req.body);
 
-    const bedMapping = {
-      "Single Seater": 1,
-      "Double Seater": 2,
-      "Three Seater": 3,
-    };
+    const existingRoom = await Room.findOne({
+      roomNumber: roomNumber,
+      createdBy: createdBy,
+    });
+    if (existingRoom) {
+      return res.status(400).json({
+        message: "Room number already exists for this user!",
+      });
+    }
 
-    // Calculate number of beds
-    const numOfBeds = bedMapping[roomType] || 0;
+    const roomphoto = req.files.map((file) => file.filename);
 
-    const roomData = new Room({
-      roomNumber,
+    // const roomTypeData = await RoomType.findOne({ roomType: roomType });
+    // const numOfBeds = roomTypeData.noOfBeds;
+    // const availableBeds = noOfBeds;
+
+    // Save to DB
+    const newRoom = new Room({
+      roomCategory,
       roomType,
-      numOfBeds,
-      availableBeds: numOfBeds,
-      roomphoto: fileNames,
-      createdBy: req.params.id,
+      roomNumber,
+      noOfBeds,
+      roomPrice,
+      availableBeds : noOfBeds,
+      roomphoto,
+      createdBy,
     });
 
-    await roomData.save();
+    console.log("newRoom :",newRoom);
+    
+    const savedRoom = await newRoom.save();
 
-    // Update availableBeds in Hostel document
-    //  const rooms = await Room.find({ hostelId: data.hostelId, deleted: false });
-    //  console.log("rooms==>",rooms);
-
-    // const totalAvailableBeds = rooms.reduce((sum, room) => sum + room.remainingBeds, 0);
-    // console.log("totalAvailableBeds==>",totalAvailableBeds);
-
-    // const hosdata = await Hostel.findOneAndUpdate({uniqueCode : HostelId},{ availableBeds : totalAvailableBeds });
-    // console.log("hosdata==>",hosdata);
-
-    console.log("roomData =>", roomData);
-    res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
+    res.status(201).json({
+      message: "Room added successfully!",
+      savedRoom,
+    });
   } catch (error) {
-    // if (error.code === 11000) {
-
-    //     // Handle duplicate...
-    //     console.log("Duplicate key error:", error);
-    //     res.status(400).json({ message: "Room number already exists in this hostel." });
-    // } else {
-    console.log("Error Found While add rooms", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
-    // }
+    console.error("Error adding room:", error);
+    res.status(500).json({
+      message: "Failed to add room.",
+      error: error.message,
+    });
   }
 };
 
 const index = async (req, res) => {
-  console.log("In room controller..");
-  console.log("Req Id=>", req.params.id);
-
   try {
     let result = await Room.find({ deleted: false, createdBy: req.params.id });
     console.log("result===>", result);
@@ -87,15 +82,13 @@ const index = async (req, res) => {
     });
     console.log("availableRoomCount ======>", availableRoomCount);
 
-    res
-      .status(200)
-      .send({
-        result,
-        totalRecodes: total_recodes,
-        availableRoomCount,
-        totalAvailableBeds,
-        message: messages.DATA_FOUND_SUCCESS,
-      });
+    res.status(200).send({
+      result,
+      totalRecodes: total_recodes,
+      availableRoomCount,
+      totalAvailableBeds,
+      message: messages.DATA_FOUND_SUCCESS,
+    });
   } catch (error) {
     console.log("Error =>", error);
     res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
@@ -252,6 +245,36 @@ const calculateBeds = async (req, res) => {
   }
 };
 
+const roomData = async (req, res) => {
+  console.log("req.params :", req.params);
+  const { hostelId, roomId } = req.params;
+
+  console.log("Hostel ID =>", hostelId);
+  console.log("Room ID =>", roomId);
+
+  try {
+    const room = await Room.findOne({
+      _id: roomId,
+      createdBy: hostelId,
+      deleted: false,
+    });
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found." });
+    }
+
+    console.log("Room Data =>", room);
+
+    res.status(200).json({
+      room,
+      message: "Room data fetched successfully.",
+    });
+  } catch (error) {
+    console.log("Error =>", error);
+    res.status(500).json({ message: "Internal Server Error." });
+  }
+};
+
 export default {
   add,
   index,
@@ -260,4 +283,5 @@ export default {
   deleteData,
   countRooms,
   calculateBeds,
+  roomData,
 };
