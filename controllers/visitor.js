@@ -5,13 +5,14 @@ import mongoose from "mongoose";
 
 const add = async (req, res) => {
   try {
-    const { studentId, visitorName, phoneNumber, dateTime } = req.body;
+    const { studentId, visitorName, phoneNumber, dateTime, visitorduration } = req.body;
 
     const newVisitor = new Visitor({
       studentId,
       visitorName,
       phoneNumber,
       dateTime,
+      visitorduration,
       createdBy: req.params.id,
     });
     await newVisitor.save();
@@ -65,6 +66,7 @@ const index = async (req, res) => {
           visitorName: 1,
           phoneNumber: 1,
           dateTime: 1,
+          visitorduration: 1,
           "roomData.roomNumber": 1,
           "studentInfo.studentName": 1,
           "studentInfo.studentContact": 1,

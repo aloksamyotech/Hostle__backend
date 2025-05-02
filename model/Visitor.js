@@ -9,6 +9,7 @@ const VisitorSchema = new mongoose.Schema(
     visitorName: { type: String, required: true },
     phoneNumber: { type: Number, required: true },
     dateTime: { type: Date, required: true },
+    visitorduration: { type: String, required: true },
     deleted: { type: Boolean, default: false },
     createdBy: {
       type: mongoose.Schema.ObjectId,

@@ -11,6 +11,7 @@ const add = async (req, res) => {
     const existingRoom = await RoomType.findOne({
       roomType,
       roomCategory,
+      createdBy: id,
     });
 
     if (existingRoom) {

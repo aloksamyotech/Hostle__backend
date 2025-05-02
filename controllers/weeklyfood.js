@@ -3,10 +3,8 @@ import messages from "../constants/message.js";
 import User from "../model/User.js";
 
 const add = async (req,res) => {
-    console.log("In WeeklyFoodMenu Controller..");
-    console.log("req id =>",req.params.id);
-    console.log("req data =>",req.body);
-
+   console.log("req.body :",req.body);
+   
     try{
         const {weekdays, foodType, foodDescription} = req.body;
         
