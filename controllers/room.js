@@ -5,13 +5,10 @@ import Hostel from "../model/Hostel.js";
 import RoomType from "../model/RoomType.js";
 
 const add = async (req, res) => {
-  console.log("In add ----------------->");
   try {
     const createdBy = req.params.id;
-    const { roomCategory, roomType, roomNumber, noOfBeds, roomPrice } =
+    const { roomTypeId, roomCategory, roomType, roomNumber, noOfBeds, roomPrice } =
       req.body;
-
-    console.log(" this is req.body :", req.body);
 
     const existingRoom = await Room.findOne({
       roomNumber: roomNumber,
@@ -25,24 +22,32 @@ const add = async (req, res) => {
 
     const roomphoto = req.files.map((file) => file.filename);
 
-    // const roomTypeData = await RoomType.findOne({ roomType: roomType });
-    // const numOfBeds = roomTypeData.noOfBeds;
-    // const availableBeds = noOfBeds;
+    const generateBeds = (noOfBeds) => {
+      const beds = [];
+      for (let i = 1; i <= noOfBeds; i++) {
+        beds.push({
+          bedNumber: i,
+          studentId: null,
+          status: "available",
+        });
+      }
+      return beds;
+    };
 
-    // Save to DB
     const newRoom = new Room({
+      roomTypeId,
       roomCategory,
       roomType,
       roomNumber,
       noOfBeds,
       roomPrice,
-      availableBeds : noOfBeds,
+      availableBeds: noOfBeds,
+      occupiedBeds: 0,
       roomphoto,
       createdBy,
+      beds: generateBeds(noOfBeds),
     });
 
-    console.log("newRoom :",newRoom);
-    
     const savedRoom = await newRoom.save();
 
     res.status(201).json({
@@ -113,46 +118,59 @@ const view = async (req, res) => {
 };
 
 const edit = async (req, res) => {
-  console.log("In room controller Edit");
-  console.log("Id =>", req.params.id);
-  console.log("room Body Data =>", req.body);
-  console.log("room File Data =>", req.files);
-
   try {
-    let fileNames = [];
+    console.log("in edit  :", req.params.id);
+    const roomId = req.params.id;
+    const { roomCategory, roomType, roomNumber, noOfBeds, roomPrice } =
+      req.body;
 
-    if (req.files && req.files.length > 0) {
-      fileNames = req.files.map((file) => file.filename);
-    } else {
-      fileNames = req.body.roomphoto;
+    const room = await Room.findById(roomId);
+
+    if (!room) {
+      return res.status(404).json({
+        message: "Room not found!",
+      });
     }
 
-    console.log("fileNames==>", fileNames);
+    const existingRoom = await Room.findOne({
+      _id: { $ne: roomId },
+      roomNumber: roomNumber,
+      createdBy: room.createdBy,
+    });
 
-    const bedMapping = {
-      "Single Seater": 1,
-      "Double Seater": 2,
-      "Three Seater": 3,
-    };
+    if (existingRoom) {
+      return res.status(400).json({
+        message: "Room number already exists for this user!",
+      });
+    }
 
-    const numOfBeds = bedMapping[req.body.roomType] || 0;
+    // If photos are uploaded, update them
+    let roomphoto = room.roomphoto;
+    if (req.files && req.files.length > 0) {
+      roomphoto = req.files.map((file) => file.filename);
+    }
 
-    let result = await Room.updateOne(
-      { _id: req.params.id },
-      {
-        $set: {
-          roomNumber: req.body.roomNumber,
-          roomType: req.body.roomType,
-          numOfBeds: numOfBeds,
-          availableBeds: numOfBeds,
-          roomphoto: fileNames,
-        },
-      }
-    );
-    res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
+    // Update fields
+    room.roomCategory = roomCategory || room.roomCategory;
+    room.roomType = roomType || room.roomType;
+    room.roomNumber = roomNumber || room.roomNumber;
+    room.noOfBeds = noOfBeds || room.noOfBeds;
+    room.roomPrice = roomPrice || room.roomPrice;
+    room.availableBeds = noOfBeds || room.availableBeds;
+    room.roomphoto = roomphoto;
+
+    const updatedRoom = await room.save();
+
+    res.status(200).json({
+      message: "Room updated successfully!",
+      updatedRoom,
+    });
   } catch (error) {
-    console.log("Found Error While Update", error);
-    res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+    console.error("Error updating room:", error);
+    res.status(500).json({
+      message: "Failed to update room.",
+      error: error.message,
+    });
   }
 };
 

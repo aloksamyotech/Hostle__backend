@@ -1,163 +1,154 @@
-import Payment from '../model/Payment.js'
-import StudentReservation from '../model/StudentReservation.js';
-import messages from '../constants/message.js'
-
-// const add = async (req,res ) => {
-//     console.log("in payment controller id=>",req.params.id);
-//     console.log("req.body Dataaaaaaaa =>", req.body);
-//     console.log("File Data paymentAttachment =>", req.file);
-//     try{
-//         console.log("in try");
-//         const {studentName, month, paymentDate, paymentType, paymentAmount,} = req.body;
-
-//         let data = await StudentReservation.findOne({studentName : studentName });
-//         console.log("student Data =>",data);
-
-//         let studentId = data._id;
-//         console.log("studentId==>",studentId);
-
-//         let totalAmmount = data.totalAmount; 
-//         console.log("totalAmount => ",totalAmmount);
-
-//         let monthlyAmmount = data.MonthlyTotalAmmount;
-//         console.log("monthlyAmmount => ",monthlyAmmount);
-
-
-
-//         let monthlyPending = monthlyAmmount - paymentAmount ;
-//         console.log("monthlyPending =>",monthlyPending);
-
-
-
-//         let totalPending  = (totalAmmount - paymentAmount) + monthlyPending ;
-//         console.log("totalPending =>",totalPending);
-
-//         const newPayment = new Payment({
-//             studentId,
-//             studentName,
-//             month,
-//             paymentDate,
-//             paymentType,
-//             paymentAmount,
-//             totalAmmount,
-//             monthlyAmmount,
-//             monthlyPending,
-//             totalPending,
-//             paymentAttachment : req.file.filename,
-//             createdBy : req.params.id,
-//         });
-//         newPayment.save();
-//         console.log("newPayment==>",newPayment);
-
-//         res.status(201).json({ message : messages.DATA_SUBMITED_SUCCESS});
-//     }catch(error){
-//         console.log("Error Found While add Data",error);
-//         res.status(500).json({ message : messages.INTERNAL_SERVER_ERROR});
-//     }
-// }
+import Payment from "../model/Payment.js";
+import messages from "../constants/message.js";
+import mongoose from "mongoose";
 
 const add = async (req, res) => {
-    console.log("in payment controller id=>", req.params.id);
-    console.log("req.body Data =>", req.body);
-    console.log("File Data paymentAttachment =>", req.file);
+  console.log("req.body :", req.body);
+  const createdBy = req.params.id;
+  try {
+    const {
+      studentId,
+      totalRent,
+      remainingAmount,
+      paymentMethod,
+      date,
+      paymentAmount,
+    } = req.body;
+
+    const paymentStatus = remainingAmount === 0 ? "paid" : "pending";
+
     
-    try {
-        console.log("in try");
-        const { studentName, month, paymentDate, paymentType, paymentAmount } = req.body;
 
-        // Fetch student data by name
-        let studentData = await StudentReservation.findOne({ studentName: studentName });
-        if (!studentData) {
-            return res.status(404).json({ message: "Student not found" });
-        }
-        
-        console.log("student Data =>", studentData);
-        let studentId = studentData._id;
-        let studentPhoneNo = studentData.studentPhoneNo;
 
-        let libraryAmount = studentData.libraryAmount;
-        let foodAmount = studentData.foodAmount;
-        let hostelRent = studentData.hostelRent;
+    // Create and save the payment
+    const newPayment = new Payment({
+      studentId,
+      totalRent,
+      remainingAmount ,
+      paymentMethod,
+      date,
+      paymentAmount,
+      paymentStatus,
+      createdBy,
+    });
 
-        let monthlyTotalAmount = studentData.MonthlyTotalAmmount;
-        let totalAmmount = studentData.totalAmount; 
+    const savedPayment = await newPayment.save();
 
-       
+    console.log("this is the savedPayment :::", savedPayment);
 
-        // Fetch the latest payment data for the student
-        let latestPayment = await Payment.findOne({ studentId: studentId }).sort({ paymentDate: -1 });
-        
-        let monthlyPending = monthlyTotalAmount - paymentAmount;
-        let totalPending = totalAmmount - paymentAmount;
-
-        if (latestPayment) {
-            console.log("Latest Payment Data =>", latestPayment);
-            // Update monthlyPending and totalPending if there is a previous record
-            monthlyPending += latestPayment.monthlyPending;
-            totalPending = latestPayment.totalPending - paymentAmount;
-        }
-        
-        console.log("monthlyPending =>", monthlyPending);
-        console.log("totalPending =>", totalPending);
-
-        const newPayment = new Payment({
-            studentId,
-            studentName,
-            studentPhoneNo,
-            month,
-            paymentDate,
-            paymentType,
-            paidAmount : paymentAmount,
-
-            libraryAmount,
-            foodAmount,
-            hostelRent,
-
-            monthlyTotalAmount,
-            totalAmmount,
-
-            monthlyPending,
-            totalPending,
-
-            paymentAttachment: req.file ? req.file.filename : undefined,
-            createdBy: req.params.id,
-        });
-
-        await newPayment.save();
-        console.log("newPayment =>", newPayment);
-
-        res.status(201).json({ message: "Data submitted successfully" });
-    } catch (error) {
-        console.log("Error Found While adding Data", error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
+    res.status(201).json({
+      message: "Payment added successfully",
+      data: savedPayment,
+    });
+  } catch (error) {
+    console.log("Error Found While adding Data", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
+const index = async (req, res) => {
+  console.log("req.params.id :::", req.params.id);
+  const id = req.params.id;
 
-const index = async (req,res) => {
-    console.log("In index in payment id=>", req.params.id);
-    try{
-        let result = await Payment.find({deleted : false, createdBy : req.params.id});
-        let total_recodes = await Payment.countDocuments({deleted : false, createdBy : req.params.id});
-        res.status(200).send({ result, totalRecodes: total_recodes, message : messages.DATA_FOUND_SUCCESS });
-    }catch(error){
-        console.log("Error =>", error);
-        res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
-    }
-}
+  try {
+    const result = await Payment.aggregate([
+      { $match: { createdBy: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: "students",
+          localField: "studentId",
+          foreignField: "_id",
+          as: "studentData",
+        },
+      },
+      {
+        $lookup: {
+          from: "assignbeds",
+          localField: "studentId",
+          foreignField: "studentId",
+          as: "bedData",
+        },
+      },
+      {
+        $unwind: "$studentData",
+      },
+      {
+        $unwind: {
+          path: "$bedData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          paymentAmount: 1,
+          remainingAmount: 1,
+          paymentStatus: 1,
+          date: 1,
+          totalRent: 1,
+          paymentMethod: 1,
+          studentData: {
+            studentName: 1,
+            studentContact: 1,
+            status: 1,
+          },
+          bedData: {
+            roomType: 1,
+            roomNumber: 1,
+            bedNumber: 1,
+          },
+        },
+      },
+    ]);
+
+    res.status(200).send({
+      result,
+      message: messages.DATA_FOUND_SUCCESS,
+    });
+  } catch (error) {
+    console.log("Error =>", error);
+    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+  }
+};
+
+const getStudentData = async (req, res) => {
+  console.log("req.params.id :::", req.params.id);
+  const id = req.params.id;
+
+  try {
+    const result = await Payment.findOne({ studentId: id }).sort({
+      createdAt: -1,
+    });
+
+    console.log("for remamaing data : ",result);
+    
+
+    res.status(200).send({
+      result,
+      message: messages.DATA_FOUND_SUCCESS,
+    });
+  } catch (error) {
+    console.log("Error =>", error);
+    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+  }
+};
 
 const view = async (req, res) => {
-    try{
-        console.log("In view Id=====>",req.params.id);
-        const result = await Payment.find({studentId : req.params.id });
-        const total_recodes = await Payment.countDocuments({studentId : req.params.id});
-        console.log("result==>",result, "total_recodes==>",total_recodes);
-        res.status(200).send({ result, totalRecodes: total_recodes, message : messages.DATA_FOUND_SUCCESS });
+  try {
+    console.log("In view Id=====>", req.params.id);
+    const result = await Payment.find({ studentId: req.params.id });
+    const total_recodes = await Payment.countDocuments({
+      studentId: req.params.id,
+    });
+    console.log("result==>", result, "total_recodes==>", total_recodes);
+    res.status(200).send({
+      result,
+      totalRecodes: total_recodes,
+      message: messages.DATA_FOUND_SUCCESS,
+    });
+  } catch (error) {
+    console.log("Error =>", error);
+    res.status(400).json({ message: messages.DATA_NOT_FOUND_ERROR });
+  }
+};
 
-    }catch(error){
-        console.log("Error =>", error);
-        res.status(400).json({ message: messages.DATA_NOT_FOUND_ERROR });
-    }
-}
-
-export default { add, index, view}
+export default { add, index, view, getStudentData };

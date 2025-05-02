@@ -235,7 +235,7 @@ const login = async (req, res) => {
       }
     }
 
-    if (password !== req.body.password) {
+    if (user.password !== password) {
       return res.status(401).json({ message: "Invalid Password" });
     }
 
