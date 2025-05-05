@@ -3,12 +3,12 @@ import Room from "../model/Room.js";
 import User from "../model/User.js";
 import Hostel from "../model/Hostel.js";
 import RoomType from "../model/RoomType.js";
+import mongoose from "mongoose";
 
 const add = async (req, res) => {
   try {
     const createdBy = req.params.id;
-    const { roomTypeId, roomCategory, roomType, roomNumber, noOfBeds, roomPrice } =
-      req.body;
+    const { roomTypeId, roomType, roomNumber, noOfBeds, roomPrice } = req.body;
 
     const existingRoom = await Room.findOne({
       roomNumber: roomNumber,
@@ -20,7 +20,14 @@ const add = async (req, res) => {
       });
     }
 
-    const roomphoto = req.files.map((file) => file.filename);
+    const roomCategoryData = await RoomType.findById(roomTypeId);
+
+    let roomPhoto = [];
+    if (req.files && req.files.roomPhotos) {
+      roomPhoto = req.files.roomPhotos.map(
+        (file) => `/images/${file.filename}`
+      );
+    }
 
     const generateBeds = (noOfBeds) => {
       const beds = [];
@@ -36,14 +43,14 @@ const add = async (req, res) => {
 
     const newRoom = new Room({
       roomTypeId,
-      roomCategory,
+      roomCategory: roomCategoryData.roomCategory,
       roomType,
       roomNumber,
       noOfBeds,
       roomPrice,
       availableBeds: noOfBeds,
       occupiedBeds: 0,
-      roomphoto,
+      roomphoto: roomPhoto,
       createdBy,
       beds: generateBeds(noOfBeds),
     });
@@ -119,22 +126,18 @@ const view = async (req, res) => {
 
 const edit = async (req, res) => {
   try {
-    console.log("in edit  :", req.params.id);
     const roomId = req.params.id;
-    const { roomCategory, roomType, roomNumber, noOfBeds, roomPrice } =
-      req.body;
+
+    const { roomTypeId, roomType, roomNumber, noOfBeds, roomPrice } = req.body;
 
     const room = await Room.findById(roomId);
-
     if (!room) {
-      return res.status(404).json({
-        message: "Room not found!",
-      });
+      return res.status(404).json({ message: "Room not found!" });
     }
 
     const existingRoom = await Room.findOne({
-      _id: { $ne: roomId },
-      roomNumber: roomNumber,
+      _id: { $ne: new mongoose.Types.ObjectId(roomId) },
+      roomNumber,
       createdBy: room.createdBy,
     });
 
@@ -144,20 +147,44 @@ const edit = async (req, res) => {
       });
     }
 
-    // If photos are uploaded, update them
     let roomphoto = room.roomphoto;
-    if (req.files && req.files.length > 0) {
-      roomphoto = req.files.map((file) => file.filename);
+    if (req.files && req.files.roomPhotos) {
+      roomphoto = req.files.roomPhotos.map(
+        (file) => `/images/${file.filename}`
+      );
     }
 
-    // Update fields
-    room.roomCategory = roomCategory || room.roomCategory;
-    room.roomType = roomType || room.roomType;
-    room.roomNumber = roomNumber || room.roomNumber;
-    room.noOfBeds = noOfBeds || room.noOfBeds;
-    room.roomPrice = roomPrice || room.roomPrice;
-    room.availableBeds = noOfBeds || room.availableBeds;
-    room.roomphoto = roomphoto;
+    const generateBeds = (noOfBeds) => {
+      const beds = [];
+      for (let i = 1; i <= noOfBeds; i++) {
+        beds.push({
+          bedNumber: i,
+          studentId: null,
+          status: "available",
+        });
+      }
+      return beds;
+    };
+
+    // if (roomTypeId) room.roomTypeId = roomTypeId;
+
+    if (roomTypeId && roomTypeId !== room.roomTypeId) {
+      const roomCategoryData = await RoomType.findById(roomTypeId);
+      room.roomCategory = roomCategoryData.roomCategory;
+    }
+
+    if (roomTypeId) room.roomTypeId = roomTypeId;
+    
+    if (roomType) room.roomType = roomType;
+    if (roomNumber) room.roomNumber = roomNumber;
+    if (roomPrice) room.roomPrice = roomPrice;
+    if (roomphoto) room.roomphoto = roomphoto;
+
+    if (noOfBeds && Number(noOfBeds) !== room.noOfBeds) {
+      room.noOfBeds = Number(noOfBeds);
+      room.availableBeds = Number(noOfBeds);
+      room.beds = generateBeds(Number(noOfBeds));
+    }
 
     const updatedRoom = await room.save();
 

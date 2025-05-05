@@ -1,6 +1,7 @@
 import Payment from "../model/Payment.js";
 import messages from "../constants/message.js";
 import mongoose from "mongoose";
+import Students from "../model/Students.js";
 
 const add = async (req, res) => {
   console.log("req.body :", req.body);
@@ -17,14 +18,10 @@ const add = async (req, res) => {
 
     const paymentStatus = remainingAmount === 0 ? "paid" : "pending";
 
-    
-
-
-    // Create and save the payment
     const newPayment = new Payment({
       studentId,
       totalRent,
-      remainingAmount ,
+      remainingAmount,
       paymentMethod,
       date,
       paymentAmount,
@@ -34,7 +31,13 @@ const add = async (req, res) => {
 
     const savedPayment = await newPayment.save();
 
-    console.log("this is the savedPayment :::", savedPayment);
+    if (paymentStatus === "paid") {
+      await Students.findByIdAndUpdate(
+        studentId,
+        { paymentStatus: "paid" },
+        { new: true }
+      );
+    }
 
     res.status(201).json({
       message: "Payment added successfully",
@@ -119,8 +122,7 @@ const getStudentData = async (req, res) => {
       createdAt: -1,
     });
 
-    console.log("for remamaing data : ",result);
-    
+    console.log("for remamaing data : ", result);
 
     res.status(200).send({
       result,

@@ -94,11 +94,11 @@ const edit = async (req, res) => {
     let aadharphoto = hostel.aadharphoto;
 
     if (req.files && req.files.hostelphoto) {
-      hostelphoto = req.files.hostelphoto[0].filename;
+      hostelphoto = `/images/${req.files.hostelphoto[0].filename}`;
     }
 
     if (req.files && req.files.aadharphoto) {
-      aadharphoto = req.files.aadharphoto[0].filename;
+      aadharphoto = `/images/${req.files.aadharphoto[0].filename}`;
     }
 
     const result = await Hostel.updateOne(
@@ -109,8 +109,6 @@ const edit = async (req, res) => {
           hostelPhoneNumber: req.body.hostelPhoneNumber,
           ownerName: req.body.ownerName,
           ownerPhoneNumber: req.body.ownerPhoneNumber,
-          state: req.body.state,
-          city: req.body.city,
           address: req.body.address,
           hostelphoto,
           aadharphoto,
@@ -185,6 +183,7 @@ const bedsCount = async (req, res) => {
 };
 
 const addNew = async (req, res) => {
+  console.log("---------------------- add hostel ----------------------------");
   try {
     const {
       hostelName,
@@ -193,10 +192,11 @@ const addNew = async (req, res) => {
       ownerPhoneNumber,
       email,
       password,
-      state,
-      city,
       address,
     } = req.body;
+
+    console.log("req.body===>", req.body);
+    console.log("req.files===>", req.files);
 
     const existingEmail = await Hostel.findOne({ email });
 
@@ -217,17 +217,19 @@ const addNew = async (req, res) => {
     const existingOwner = await Hostel.findOne({ ownerPhoneNumber });
     if (existingOwner) {
       return res.status(401).json({
-        status: 401, 
+        status: 401,
         message: "Owner ContactNo is Already Exist!!",
       });
     }
 
-    const hostelphoto = req.files.hostelphoto
-      ? req.files.hostelphoto[0].filename
-      : null;
-    const aadharphoto = req.files.aadharphoto
-      ? req.files.aadharphoto[0].filename
-      : null;
+    let hostelphoto = null;
+    let aadharphoto = null;
+    if (req.files && req.files.hostelphoto) {
+      hostelphoto = `/images/${req.files.hostelphoto[0].filename}`;
+    }
+    if (req.files && req.files.aadharphoto) {
+      aadharphoto = `/images/${req.files.aadharphoto[0].filename}`;
+    }
 
     const newHostel = new Hostel({
       hostelName,
@@ -236,8 +238,6 @@ const addNew = async (req, res) => {
       ownerPhoneNumber,
       email,
       password,
-      state,
-      city,
       address,
       hostelphoto,
       aadharphoto,

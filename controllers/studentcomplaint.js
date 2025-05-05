@@ -73,6 +73,7 @@ const index = async (req, res) => {
           "roomData.roomNumber": 1,
           "studentInfo.studentName": 1,
           "studentInfo.studentContact": 1,
+          "studentInfo._id": 1,
         },
       },
     ]);

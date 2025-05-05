@@ -2,6 +2,7 @@ import express from "express";
 import studentrev from "../controllers/reservationstudent.js";
 import auth from "../middlewares/auth.js";
 import { uploadStudent } from "../utils/upload.js";
+import fileHandler from "../middlewares/filehandler.js";
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.put("/edit/:id", uploadStudent, studentrev.edit);
 router.delete("/deleteData/:id", studentrev.deleteData);
 router.put("/updateStatus/:id", studentrev.updateStatus);
 
-router.post("/assignBed/:id", uploadStudent, studentrev.assignBed);
+router.post("/assignBed/:id", fileHandler(), studentrev.assignBed);
 router.get("/getAllReservedStudents/:id", studentrev.allReservedStudents);
 router.get("/getStudent/:id", studentrev.getStudent);
 router.put("/update/:id/:hostelId", studentrev.editAssignBed);

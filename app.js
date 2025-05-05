@@ -19,32 +19,7 @@ app.use("/", serverRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(
-  "/uploads/hostels",
-  express.static(path.join(__dirname, "uploads/hostels"))
-);
-app.use(
-  "/uploads/customers",
-  express.static(path.join(__dirname, "uploads/customers"))
-);
-app.use(
-  "/uploads/students",
-  express.static(path.join(__dirname, "uploads/students"))
-);
-app.use(
-  "/uploads/bills",
-  express.static(path.join(__dirname, "uploads/bills"))
-);
-app.use(
-  "/uploads/payment",
-  express.static(path.join(__dirname, "uploads/payment"))
-);
-
-app.use(
-  "/uploads/RoomImages",
-  express.static(path.join(__dirname, "uploads/RoomImages"))
-);
+app.use("/images", express.static("uploads/images"));
 
 const port = process.env.PORT || "4000";
 app.listen(port, () => {

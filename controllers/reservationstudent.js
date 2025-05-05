@@ -162,7 +162,10 @@ const index = async (req, res) => {
       deleted: false,
       createdBy: req.params.id,
     });
-    let total_recodes = await Students.countDocuments({createdBy : req.params.id, deleted : false});
+    let total_recodes = await Students.countDocuments({
+      createdBy: req.params.id,
+      deleted: false,
+    });
     console.log("result index ===>", result);
     res.status(200).send({
       result,
@@ -403,10 +406,17 @@ const assignBed = async (req, res) => {
       address,
     } = req.body;
 
-    const studentPhoto = req.files?.studentPhoto?.[0]?.filename || "";
-    const aadharPhoto = req.files?.aadharPhoto?.[0]?.filename || "";
+    let studentPhoto = null;
+    let aadharPhoto = null;
 
-    // ✅ Step 1: Check if student with same contact already exists
+    if (req.files && req.files.studentPhoto) {
+      studentPhoto = `/images/${req.files.studentPhoto[0].filename}`;
+    }
+
+    if (req.files && req.files.aadharPhoto) {
+      aadharPhoto = `/images/${req.files.aadharPhoto[0].filename}`;
+    }
+
     const existingStudent = await Students.findOne({ studentContact });
     if (existingStudent) {
       return res.status(400).json({

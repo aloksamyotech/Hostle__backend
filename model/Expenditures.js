@@ -7,7 +7,7 @@ const ExpenseSchema = new mongoose.Schema({
     price        : { type : Number, require : true }, 
     date         : { type : Date,   require : true },
     monthName    : {type : String,  require : true},
-    billPhoto : { type : String,   require : true },
+    billPhoto : { type : String },
     deleted      : { type : Boolean, default : false},   
     createdBy: {
         type: mongoose.Schema.ObjectId,
