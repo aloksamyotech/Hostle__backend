@@ -89,6 +89,7 @@ const index = async (req, res) => {
           date: 1,
           totalRent: 1,
           paymentMethod: 1,
+          createdAt: 1,
           studentData: {
             studentName: 1,
             studentContact: 1,
@@ -136,19 +137,18 @@ const getStudentData = async (req, res) => {
 
 const view = async (req, res) => {
   try {
-    console.log("In view Id=====>", req.params.id);
-    const result = await Payment.find({ studentId: req.params.id });
-    const total_recodes = await Payment.countDocuments({
-      studentId: req.params.id,
-    });
-    console.log("result==>", result, "total_recodes==>", total_recodes);
-    res.status(200).send({
+    const studentId = req.params.id;
+    console.log("In view Id=====>", studentId);
+
+    const result = await Payment.find({ studentId }).populate("studentId");
+
+    res.status(200).json({
       result,
-      totalRecodes: total_recodes,
+
       message: messages.DATA_FOUND_SUCCESS,
     });
   } catch (error) {
-    console.log("Error =>", error);
+    console.error("Error =>", error);
     res.status(400).json({ message: messages.DATA_NOT_FOUND_ERROR });
   }
 };

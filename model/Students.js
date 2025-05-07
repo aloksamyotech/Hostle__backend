@@ -21,15 +21,12 @@ const StudentDataSchema = new mongoose.Schema(
     },
     guardianName: {
       type: String,
-      required: true,
     },
     guardianContactNo: {
       type: Number,
-      required: true,
     },
     guardiansAddress: {
       type: String,
-      required: true,
     },
     dob: {
       type: Date,
@@ -47,7 +44,6 @@ const StudentDataSchema = new mongoose.Schema(
     },
     courseOccupation: {
       type: String,
-      required: true,
     },
     address: {
       type: String,

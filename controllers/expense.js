@@ -12,14 +12,13 @@ const add = async (req, res) => {
   try {
     console.log("in try");
     const { expenseTitle, price, date } = req.body;
-   
+
     const dateObj = new Date(date);
     const monthNamee = dateObj.toLocaleString("default", { month: "long" });
     console.log("monthNamee==>", monthNamee);
 
     const [day, month, year] = date.split("-");
 
-    
     const monthNames = [
       "January",
       "February",
@@ -89,13 +88,11 @@ const index = async (req, res) => {
     console.log("result =>", result);
 
     const total_recodes = await Expenditure.countDocuments(filter);
-    res
-      .status(200)
-      .send({
-        result,
-        totalRecodes: total_recodes,
-        message: messages.DATA_FOUND_SUCCESS,
-      });
+    res.status(200).send({
+      result,
+      totalRecodes: total_recodes,
+      message: messages.DATA_FOUND_SUCCESS,
+    });
   } catch (error) {
     console.log("Error =>", error);
     res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
@@ -226,9 +223,10 @@ const edit = async (req, res) => {
       return res.status(404).json({ message: "Expense not found" });
     }
 
-    // Use the existing file name if no new file is provided
-    const billPhoto = req.file ? req.file.filename : existingDoc.billPhoto;
-    console.log("billPhoto===>", billPhoto);
+    let billPhoto = existingDoc.billPhoto;
+    if (req.files && req.files.billPhoto) {
+      billPhoto = `/images/${req.files.billPhoto[0].filename}`;
+    }
 
     const result = await Expenditure.findByIdAndUpdate(
       req.params.id,

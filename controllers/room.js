@@ -127,7 +127,6 @@ const view = async (req, res) => {
 const edit = async (req, res) => {
   try {
     const roomId = req.params.id;
-
     const { roomTypeId, roomType, roomNumber, noOfBeds, roomPrice } = req.body;
 
     const room = await Room.findById(roomId);
@@ -166,28 +165,46 @@ const edit = async (req, res) => {
       return beds;
     };
 
-    // if (roomTypeId) room.roomTypeId = roomTypeId;
-
     if (roomTypeId && roomTypeId !== room.roomTypeId) {
       const roomCategoryData = await RoomType.findById(roomTypeId);
       room.roomCategory = roomCategoryData.roomCategory;
     }
 
     if (roomTypeId) room.roomTypeId = roomTypeId;
-    
     if (roomType) room.roomType = roomType;
     if (roomNumber) room.roomNumber = roomNumber;
     if (roomPrice) room.roomPrice = roomPrice;
     if (roomphoto) room.roomphoto = roomphoto;
 
     if (noOfBeds && Number(noOfBeds) !== room.noOfBeds) {
-      room.noOfBeds = Number(noOfBeds);
-      room.availableBeds = Number(noOfBeds);
-      room.beds = generateBeds(Number(noOfBeds));
+      const updatedNoOfBeds = Number(noOfBeds);
+      room.noOfBeds = updatedNoOfBeds;
+
+      const currentBeds = room.beds || [];
+
+      if (updatedNoOfBeds > currentBeds.length) {
+        // Add new beds
+        for (let i = currentBeds.length + 1; i <= updatedNoOfBeds; i++) {
+          currentBeds.push({
+            bedNumber: i,
+            studentId: null,
+            status: "available",
+          });
+        }
+      } else if (updatedNoOfBeds < currentBeds.length) {
+        // Remove extra beds from the end
+        currentBeds.splice(updatedNoOfBeds); // keep only up to the new noOfBeds
+      }
+
+      room.beds = currentBeds;
+
+      // Update availableBeds and occupiedBeds
+      // const occupied = room.beds.filter((b) => b.studentId).length;
+      // room.occupiedBeds = occupied;
+      room.availableBeds = updatedNoOfBeds - room.occupiedBeds;
     }
 
     const updatedRoom = await room.save();
-
     res.status(200).json({
       message: "Room updated successfully!",
       updatedRoom,

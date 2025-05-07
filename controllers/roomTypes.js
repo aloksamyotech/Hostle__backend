@@ -50,11 +50,24 @@ const getAll = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  console.log("req.params.id : ", req.params.id);
-
-  console.log("req.body :", req.body);
+ 
+  const roomType = req.body.roomType.toLowerCase();
+  const roomCategory = req.body.roomCategory;
 
   try {
+
+    const existingRoom = await RoomType.findOne({
+      roomType,
+      roomCategory,
+    });
+
+    if (existingRoom) {
+      return res.status(400).json({
+        status: 400,
+        message: "This room type and category combination already exists.",
+      });
+    }
+
     let result = await RoomType.updateOne(
       { _id: req.params.id },
       {

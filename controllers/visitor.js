@@ -5,7 +5,8 @@ import mongoose from "mongoose";
 
 const add = async (req, res) => {
   try {
-    const { studentId, visitorName, phoneNumber, dateTime, visitorduration } = req.body;
+    const { studentId, visitorName, phoneNumber, dateTime, visitorduration } =
+      req.body;
 
     const newVisitor = new Visitor({
       studentId,
@@ -85,25 +86,19 @@ const index = async (req, res) => {
 };
 
 const list = async (req, res) => {
-  console.log("list In Visitor Controller.. Id ====>", req.params.id);
-
+  const studentId = req.params.id;
   try {
-    const result = await Visitor.find({ studentId: req.params.id });
-    console.log("In Visitor result ===>", result);
-    const total_recodes = await Visitor.countDocuments({
-      studentId: req.params.id,
-      deleted: false,
-    });
-    console.log("In Visitor total_recodes ===>", total_recodes);
+    const result = await Visitor.find({ studentId, deleted: false }).populate(
+      "studentId"
+    );
 
-    res.status(200).send({
+    res.status(200).json({
       result,
-      totalRecodes: total_recodes,
       message: messages.DATA_FOUND_SUCCESS,
     });
   } catch (error) {
-    console.log("Error =>", error);
-    res.status(401).json({ message: messages.DATA_NOT_FOUND_ERROR });
+    console.error("Error =>", error);
+    res.status(400).json({ message: messages.DATA_NOT_FOUND_ERROR });
   }
 };
 
