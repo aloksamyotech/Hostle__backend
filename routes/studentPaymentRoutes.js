@@ -7,6 +7,8 @@ router.post('/add/:id', studentPayment.add);
 router.get('/list/:id',studentPayment.index);
 router.get('/paymenthistory/:id',studentPayment.view);
 router.get('/getRemaningData/:id', studentPayment.getStudentData);
+router.get('/paymentDataById/:id', studentPayment.paymentDataById);
+
 
 
 

@@ -10,6 +10,7 @@ import Students from "../model/Students.js";
 import student from "./student.js";
 import roomTypes from "./roomTypes.js";
 import room from "./room.js";
+import Payment from "../model/Payment.js";
 
 const add = async (req, res) => {
   console.log("In  StudentReservation controller");
@@ -389,7 +390,9 @@ const assignBed = async (req, res) => {
       endDate,
       stayMonths,
       totalRent,
+      finalTotalRent,
       advanceAmount,
+
       foodFee,
       libraryFee,
       studentName,
@@ -474,6 +477,7 @@ const assignBed = async (req, res) => {
       foodFee,
       libraryFee,
       totalRent,
+      finalTotalRent,
       advanceAmount,
       createdBy,
       studentId: newStudent._id,
@@ -506,77 +510,9 @@ const assignBed = async (req, res) => {
   }
 };
 
-// const editAssignBed = async (req, res) => {
-//   try {
-//     const { revId, hostelId } = req.params;
-//     const {
-//       roomCategory,
-//       roomType,
-//       roomNumber,
-//       bedNumber,
-//       roomRent,
-//       startDate,
-//       endDate,
-//       stayMonths,
-//       foodFee,
-//       libraryFee,
-//       totalRent,
-//     } = req.body;
-
-//     const room = await Room.findOne({
-//       roomNumber: roomNumber,
-//       createdBy: hostelId,
-//     });
-
-//     if (!room) {
-//       return res.status(404).json({ message: "Room not found" });
-//     }
-
-//     if (room.availableBeds <= 0) {
-//       return res
-//         .status(404)
-//         .json({ message: "No beds available for this room" });
-//     }
-
-//     const updateAssignBed = await AssignBeds.updateOne(
-//       {
-//         _id: revId,
-//       },
-//       {
-//         roomId: room._id,
-//         roomType,
-//         roomNumber,
-//         bedNumber,
-//         roomRent,
-//         startDate,
-//         endDate,
-//         totalRent,
-//         foodFee,
-//         libraryFee,
-//       }
-//     );
-
-//     await updateAssignBed.save();
-
-//      const bedIndex = room.beds.findIndex(
-//       (bed) => bed.bedNumber === Number(bedNumber)
-//     );
-
-//     room.beds[bedIndex].status = "occupied";
-
-//     room.availableBeds = room.availableBeds - 1;
-//     room.occupiedBeds = room.noOfBeds - room.availableBeds;
-//     await room.save();
-//     console.log("-------- updated room after --------->", room);
-
-//   } catch (error) {
-//     console.error("Error Found =>", error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
-
 const editAssignBed = async (req, res) => {
   console.log("--------- In editAssignBed --------------");
+  console.log("req.body :", req.body);
 
   try {
     const { id, hostelId } = req.params;
@@ -592,6 +528,8 @@ const editAssignBed = async (req, res) => {
       foodFee,
       libraryFee,
       totalRent,
+      finalTotalRent,
+      advanceAmount,
     } = req.body;
 
     const existingAssignment = await AssignBeds.findById(id);
@@ -652,6 +590,8 @@ const editAssignBed = async (req, res) => {
         endDate,
         stayMonths,
         totalRent,
+        finalTotalRent,
+        advanceAmount,
         foodFee,
         libraryFee,
       },
@@ -671,6 +611,26 @@ const editAssignBed = async (req, res) => {
     newRoom.occupiedBeds = newRoom.beds.length - newRoom.availableBeds;
     await newRoom.save();
 
+    // 6. Update the student record if needed
+    const latestPayment = await Payment.findOne({
+      studentId: existingAssignment.studentId,
+    }).sort({ createdAt: -1 });
+
+    console.log("this is latestPayment :", latestPayment);
+
+    if (latestPayment) {
+      const updatedtotalRent = totalRent;
+      const paidAmt =
+        latestPayment.finalTotalRent - latestPayment.remainingAmount;
+      const updatedFinalTotalRent = finalTotalRent - paidAmt;
+
+      // STEP 3: Update the payment record
+      latestPayment.totalRent = updatedtotalRent;
+      latestPayment.finalTotalRent = finalTotalRent;
+      latestPayment.remainingAmount = updatedFinalTotalRent;
+      await latestPayment.save();
+    }
+
     return res.status(200).json({
       message: "Assigned bed updated successfully",
       data: updatedAssign,
@@ -688,11 +648,6 @@ const allReservedStudents = async (req, res) => {
     const reservedStudents = await AssignBeds.find({ createdBy })
       .populate("studentId")
       .populate("roomId");
-
-    console.log(
-      "----------- reservedStudents ----------------->",
-      reservedStudents
-    );
 
     res.status(200).json({
       success: true,

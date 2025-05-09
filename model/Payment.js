@@ -11,6 +11,15 @@ const StudentPaymentSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
+    advanceAmount: {
+      type: Number,
+      required: true,
+    },
+    finalTotalRent: {
+      type: Number,
+      required: true,
+    },
     remainingAmount: {
       type: Number,
       required: true,

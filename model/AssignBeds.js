@@ -52,6 +52,9 @@ const AssignBedSchema = new mongoose.Schema(
     },
     advanceAmount: {
       type: Number,
+    },
+    finalTotalRent:{
+      type: Number,
       required: true,
     },
     createdBy: {

@@ -2,6 +2,8 @@ import Payment from "../model/Payment.js";
 import messages from "../constants/message.js";
 import mongoose from "mongoose";
 import Students from "../model/Students.js";
+import AssignBeds from "../model/AssignBeds.js";
+import Hostel from "../model/Hostel.js";
 
 const add = async (req, res) => {
   console.log("req.body :", req.body);
@@ -10,6 +12,8 @@ const add = async (req, res) => {
     const {
       studentId,
       totalRent,
+      finalTotalRent,
+      advanceAmount,
       remainingAmount,
       paymentMethod,
       date,
@@ -21,6 +25,8 @@ const add = async (req, res) => {
     const newPayment = new Payment({
       studentId,
       totalRent,
+      finalTotalRent,
+      advanceAmount,
       remainingAmount,
       paymentMethod,
       date,
@@ -88,6 +94,8 @@ const index = async (req, res) => {
           paymentStatus: 1,
           date: 1,
           totalRent: 1,
+          finalTotalRent: 1,
+          advanceAmount: 1,
           paymentMethod: 1,
           createdAt: 1,
           studentData: {
@@ -99,6 +107,8 @@ const index = async (req, res) => {
             roomType: 1,
             roomNumber: 1,
             bedNumber: 1,
+            foodFee: 1,
+            libraryFee: 1,
           },
         },
       },
@@ -153,4 +163,32 @@ const view = async (req, res) => {
   }
 };
 
-export default { add, index, view, getStudentData };
+const paymentDataById = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const result = await Payment.findById(id).populate("studentId");
+
+    if (!result) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    const assignBedData = await AssignBeds.findOne({
+      studentId: result.studentId._id,
+    });
+
+    const hostelData = await Hostel.findById(result.createdBy);
+
+    res.status(200).send({
+      payment: result,
+      assignBed: assignBedData,
+      hostelData: hostelData,
+      message: messages.DATA_FOUND_SUCCESS,
+    });
+  } catch (error) {
+    console.error("Error =>", error);
+    res.status(400).json({ message: messages.DATA_NOT_FOUND_ERROR });
+  }
+};
+
+export default { add, index, view, getStudentData, paymentDataById };
