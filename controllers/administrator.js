@@ -219,40 +219,75 @@ const deleteData = async (req, res) => {
 //   }
 // }
 
+// const login = async (req, res) => {
+//   console.log("Login Request Body =>", req.body);
+//   try {
+//     const { email, password } = req.body;
+
+//     let user = await SuperAdmin.findOne({ email });
+
+//     if (!user) {
+//       user = await Hostel.findOne({ email });
+//       if (!user) {
+//         return res
+//           .status(401)
+//           .json({ message: `User not found with email ${email}` });
+//       }
+//     }
+
+//     if (user.password !== password) {
+//       return res.status(401).json({ message: "Invalid Password" });
+//     }
+
+//     const generateToken = (user) => {
+//       const payload = {
+//         _id: user._id,
+//         email: user.email,
+//         role: user.role,
+//       };
+
+//       const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "1d" });
+//       return token;
+//     };
+
+//     const token = generateToken(user);
+
+//     // Set JWT token in the response header
+//     res.setHeader("Authorization", `Bearer ${token}`);
+//     res.status(200).json({ token, user, message: "Login successful!" });
+//   } catch (error) {
+//     console.error("Error in login:", error);
+//     res.status(500).json({ message: "An error occurred while logging in" });
+//   }
+// };
+
 const login = async (req, res) => {
   console.log("Login Request Body =>", req.body);
   try {
     const { email, password } = req.body;
 
-    let user = await SuperAdmin.findOne({ email });
+    const user = await Hostel.findOne({ email });
 
     if (!user) {
-      user = await Hostel.findOne({ email });
-      if (!user) {
-        return res
-          .status(401)
-          .json({ message: `User not found with email ${email}` });
-      }
+      return res
+        .status(401)
+        .json({ message: `User not found with email ${email}` });
     }
 
-    if (user.password !== password) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid Password" });
     }
 
-    const generateToken = (user) => {
-      const payload = {
-        _id: user._id,
-        email: user.email,
-        role: user.role,
-      };
-
-      const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "1d" });
-      return token;
+    const payload = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
     };
 
-    const token = generateToken(user);
+    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "1d" });
 
-    // Set JWT token in the response header
     res.setHeader("Authorization", `Bearer ${token}`);
     res.status(200).json({ token, user, message: "Login successful!" });
   } catch (error) {

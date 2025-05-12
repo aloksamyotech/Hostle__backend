@@ -1,6 +1,7 @@
 import Hostel from "../model/Hostel.js";
 import messages from "../constants/message.js";
 import User from "../model/User.js";
+import bcrypt from "bcrypt";
 
 const add = async (req, res) => {
   console.log("In hostel controller");
@@ -248,6 +249,58 @@ const addNew = async (req, res) => {
     res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
   } catch (error) {
     console.log("Error =>", error);
+    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    console.log("chnage password req.body ===>", req.body);
+
+    const { email, currentPassword, newPassword, confirmPassword } = req.body;
+
+    const userExists = await Hostel.findOne({ email: email });
+    console.log("userExists ===>", userExists);
+
+    if (!userExists) {
+      return res.status(404).json({
+        message: "Hostel not found!",
+      });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(
+      currentPassword,
+      userExists.password
+    );
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        message: "Your Current Password is Incorrect",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(401).json({
+        message: "Password do not match. please verify both fields",
+      });
+    }
+
+    const hashPassword = await bcrypt.hash(newPassword, 10);
+
+    const updatedUser = await Hostel.findOneAndUpdate(
+      { email },
+      { $set: { password: hashPassword } },
+      { new: true }
+    );
+
+    console.log("updatedUser ===>", updatedUser);
+
+    return res.status(200).json({
+      message: "Password Change Successfully",
+    });
+  } catch (error) {
+    console.log("Error =>", error);
+    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
   }
 };
 
@@ -260,4 +313,5 @@ export default {
   roomsCount,
   bedsCount,
   addNew,
+  changePassword,
 };

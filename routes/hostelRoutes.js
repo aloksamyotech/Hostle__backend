@@ -11,5 +11,6 @@ router.get("/view/:id", hostel.view);
 router.put("/edit/:id", fileHandler(), hostel.edit);
 router.delete("/delete/:id", hostel.deleteData);
 router.get("/availablebeds/:id", hostel.bedsCount);
+router.post("/change_password", hostel.changePassword);
 
 export default router;
