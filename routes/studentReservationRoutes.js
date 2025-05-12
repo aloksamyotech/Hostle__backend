@@ -9,7 +9,7 @@ const router = express.Router();
 router.post("/add/:id", uploadStudent, studentrev.add);
 router.get("/index/:id", studentrev.index);
 router.get("/view/:id", studentrev.view);
-router.put("/edit/:id", uploadStudent, studentrev.edit);
+router.put("/edit/:id", fileHandler(), studentrev.edit);
 router.delete("/deleteData/:id", studentrev.deleteData);
 router.put("/updateStatus/:id", studentrev.updateStatus);
 
@@ -17,5 +17,6 @@ router.post("/assignBed/:id", fileHandler(), studentrev.assignBed);
 router.get("/getAllReservedStudents/:id", studentrev.allReservedStudents);
 router.get("/getStudent/:id", studentrev.getStudent);
 router.put("/update/:id/:hostelId", studentrev.editAssignBed);
+router.put("/change_status/:id", studentrev.activeDeactiveUser);
 
 export default router;

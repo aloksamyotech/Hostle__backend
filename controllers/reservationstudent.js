@@ -200,121 +200,76 @@ const view = async (req, res) => {
 
 const edit = async (req, res) => {
   console.log("In StudentReservation controller for edit");
-  console.log("Id =>", req.params.id);
+  console.log("req.params.id =>", req.params.id);
+  console.log("req.body =>", req.body);
   console.log("file data =>", req.files);
 
   try {
-    const studentphoto = req.files.studentphoto
-      ? req.files.studentphoto[0].filename
-      : null;
-    const aadharcardphoto = req.files.aadharcardphoto
-      ? req.files.aadharcardphoto[0].filename
-      : null;
+    const studentId = req.params.id;
+    const {
+      studentName,
+      studentContact,
+      fatherName,
+      fatherContact,
+      guardianName,
+      guardianContactNo,
+      guardiansAddress,
+      dob,
+      gender,
+      mailId,
+      courseOccupation,
+      address,
+    } = req.body;
 
-    const start = new Date(req.body.startDate);
-    const end = new Date(req.body.endDate);
-    const totalMonths =
-      (end.getFullYear() - start.getFullYear()) * 12 +
-      (end.getMonth() - start.getMonth()) +
-      1;
-    const MonthlyTotalAmmount =
-      Number(req.body.libraryAmount) +
-      Number(req.body.foodAmount) +
-      Number(req.body.hostelRent);
-    const totalAmount = MonthlyTotalAmmount * totalMonths;
-
-    console.log("room=>", req.body.roomNumber);
-
-    // Find the current reservation
-    const currentReservation = await StudentReservation.findById(req.params.id);
-    console.log("currentReservation==>", currentReservation);
-
-    if (!currentReservation) {
-      return res.status(404).json({ message: "Reservation not found." });
-    }
-
-    // Only update room availability if the room has changed
-    if (String(currentReservation.roomNumber) !== String(req.body.roomNumber)) {
-      // Explicitly convert to strings
-      console.log("in ................");
-      // Find the old room
-      const oldRoom = await Room.findOne({
-        roomNumber: currentReservation.roomNumber,
+    const student = await Students.findById({ _id: req.params.id });
+    if (!student) {
+      return res.status(404).json({
+        message: "student not found!",
       });
-
-      // Check availability in the new room
-      const newRoom = await Room.findOne({ roomNumber: req.body.roomNumber });
-      if (!newRoom) {
-        return res.status(404).json({ message: "New room not found." });
-      }
-
-      if (newRoom.availableBeds <= 0) {
-        return res
-          .status(400)
-          .json({ message: "No available beds in the new room." });
-      }
-
-      // Update bed counts in both rooms
-      if (oldRoom) {
-        oldRoom.occupiedBeds -= 1;
-        oldRoom.availableBeds += 1;
-        await oldRoom.save();
-      }
-
-      newRoom.occupiedBeds += 1;
-      newRoom.availableBeds -= 1;
-      await newRoom.save();
     }
 
-    const studentPhoto = req.files.studentphoto
-      ? req.files.studentphoto[0].filename
-      : currentReservation.studentphoto;
-    console.log("studentPhoto==>", studentPhoto);
+    let studentPhoto = student.studentPhoto;
+    let aadharPhoto = student.aadharPhoto;
 
-    const aadharCardPhoto = req.files.aadharcardphoto
-      ? req.files.aadharcardphoto[0].filename
-      : currentReservation.aadharcardphoto;
-    console.log("aadharCardPhoto==>", aadharCardPhoto);
+    if (req.files && req.files.studentPhoto) {
+      studentPhoto = `/images/${req.files.studentPhoto[0].filename}`;
+    }
 
-    // Update the reservation
-    const updatedReservation = await StudentReservation.updateOne(
+    if (req.files && req.files.aadharPhoto) {
+      aadharPhoto = `/images/${req.files.aadharPhoto[0].filename}`;
+    }
+
+    const updatedStudent = await Students.updateOne(
       { _id: req.params.id },
       {
-        studentName: req.body.studentName,
-        studentPhoneNo: req.body.studentPhoneNo,
-        fathersName: req.body.fathersName,
-        fathersPhoneNo: req.body.fathersPhoneNo,
-        dateOfBirth: req.body.dateOfBirth,
-        gender: req.body.gender,
-        email: req.body.email,
-        studentphoto: studentPhoto,
-        state: req.body.state,
-        city: req.body.city,
-        address: req.body.address,
-        aadharcardphoto: aadharCardPhoto,
-        roomNumber: req.body.roomNumber,
-        startDate: req.body.startDate,
-        endDate: req.body.endDate,
-        isLibrary: req.body.isLibrary,
-        isFood: req.body.isFood,
-        libraryAmount: req.body.libraryAmount,
-        foodAmount: req.body.foodAmount,
-        hostelRent: req.body.hostelRent,
-        advancePayment: req.body.advancePayment,
-        MonthlyTotalAmmount: MonthlyTotalAmmount,
-        totalAmount: totalAmount,
-      },
-      { new: true }
+        $set: {
+          studentName: req.body.studentName,
+          studentContact: req.body.studentContact,
+          fatherName: req.body.fatherName,
+          fatherContact: req.body.fatherContact,
+          guardianName: req.body.guardianName,
+          guardianContactNo: req.body.guardianContactNo,
+          guardiansAddress: req.body.guardiansAddress,
+          dob: req.body.dob,
+          gender: req.body.gender,
+          mailId: req.body.mailId,
+          courseOccupation: req.body.courseOccupation,
+          address: req.body.address,
+          studentPhoto,
+          aadharPhoto,
+        },
+      }
     );
 
-    console.log("updatedReservation====>", updatedReservation);
-
-    res
-      .status(200)
-      .json({ updatedReservation, message: "Data updated successfully." });
+    res.status(200).json({
+      message: "Student data updated successfully.",
+      student: updatedStudent,
+    });
   } catch (error) {
-    console.log("Found Error While Updating User", error);
-    res.status(400).json({ message: "Failed to update data." });
+    console.log("Found Error While Updating Student", error);
+    res
+      .status(400)
+      .json({ message: "Failed to update data.", error: error.message });
   }
 };
 
@@ -718,6 +673,32 @@ const getStudent = async (req, res) => {
   }
 };
 
+export const activeDeactiveUser = async (req, res) => {
+  const studentId = req.params.id;
+  const { status } = req.body;
+
+  try {
+    if (studentId) {
+      const updatedStudent = await Students.findByIdAndUpdate(studentId, {
+        status,
+      });
+
+      if (!updatedStudent) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      return res
+        .status(200)
+        .json({ message: "Student Status Update Successfully" });
+    } else {
+      return res.status(400).json({ message: "Student Id is required" });
+    }
+  } catch (error) {
+    console.error("Error Found =>", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export default {
   add,
   view,
@@ -729,4 +710,5 @@ export default {
   allReservedStudents,
   getStudent,
   editAssignBed,
+  activeDeactiveUser,
 };
