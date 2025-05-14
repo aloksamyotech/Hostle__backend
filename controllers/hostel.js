@@ -259,6 +259,12 @@ export const changePassword = async (req, res) => {
 
     const { email, currentPassword, newPassword, confirmPassword } = req.body;
 
+    if (email === "sunrisehostel@gmail.com") {
+      return res.status(403).json({
+        message: "You are not allowed to change the password for this account.",
+      });
+    }
+
     const userExists = await Hostel.findOne({ email: email });
     console.log("userExists ===>", userExists);
 
