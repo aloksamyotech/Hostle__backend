@@ -347,6 +347,7 @@ const assignBed = async (req, res) => {
       totalRent,
       finalTotalRent,
       advanceAmount,
+      discount,
 
       foodFee,
       libraryFee,
@@ -434,6 +435,7 @@ const assignBed = async (req, res) => {
       totalRent,
       finalTotalRent,
       advanceAmount,
+      discount,
       createdBy,
       studentId: newStudent._id,
       roomId: roomUpdate._id,
