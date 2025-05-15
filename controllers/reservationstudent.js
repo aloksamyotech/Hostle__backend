@@ -585,6 +585,10 @@ const editAssignBed = async (req, res) => {
       latestPayment.totalRent = updatedtotalRent;
       latestPayment.finalTotalRent = finalTotalRent;
       latestPayment.remainingAmount = updatedFinalTotalRent;
+
+      if (updatedFinalTotalRent > 0) {
+        latestPayment.paymentStatus = "pending";
+      }
       await latestPayment.save();
     }
 
