@@ -2,6 +2,9 @@ import StudentReservation from "../model/StudentReservation.js";
 import Visitor from "../model/Visitor.js";
 import messages from "../constants/message.js";
 import mongoose from "mongoose";
+import { statusCodes } from "../core/constant.js";
+import { commonMessage, visitorMessages } from "../core/messages.js";
+import { createResponse, sendResponse } from "../helper/ResponseHelper.js";
 
 const add = async (req, res) => {
   try {
@@ -18,10 +21,19 @@ const add = async (req, res) => {
     });
     await newVisitor.save();
 
-    res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, visitorMessages.ADD)
+    );
   } catch (error) {
     console.log("Error Found While add Data", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
@@ -75,13 +87,24 @@ const index = async (req, res) => {
       },
     ]);
 
-    res.status(200).send({
-      result,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+    // res.status(200).send({
+    //   result,
+    //   message: messages.DATA_FOUND_SUCCESS,
+    // });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.log("Error =>", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
@@ -92,13 +115,24 @@ const list = async (req, res) => {
       "studentId"
     );
 
-    res.status(200).json({
-      result,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+    // res.status(200).json({
+    //   result,
+    //   message: messages.DATA_FOUND_SUCCESS,
+    // });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.error("Error =>", error);
-    res.status(400).json({ message: messages.DATA_NOT_FOUND_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 

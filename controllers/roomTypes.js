@@ -1,5 +1,8 @@
 import RoomType from "../model/RoomType.js";
 import messages from "../constants/message.js";
+import { statusCodes } from "../core/constant.js";
+import { commonMessage, RoomTypeMessages } from "../core/messages.js";
+import { createResponse, sendResponse } from "../helper/ResponseHelper.js";
 
 const add = async (req, res) => {
   const id = req.params.id;
@@ -12,12 +15,14 @@ const add = async (req, res) => {
       roomType,
       roomCategory,
       createdBy: id,
+      deleted: false,
     });
 
     if (existingRoom) {
-      return res.status(400).json({
-        message: "This room type and category combination already exists.",
-      });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.CONFLICT, RoomTypeMessages.EXIST)
+      );
     }
 
     const newRoomType = new RoomType({
@@ -25,12 +30,21 @@ const add = async (req, res) => {
       roomCategory,
       createdBy: id,
     });
-
     await newRoomType.save();
-    res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, RoomTypeMessages.ADD, newRoomType)
+    );
   } catch (error) {
-    console.log("Error Found While add rooms type", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    console.error("Error Found While adding room type", error);
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
@@ -39,33 +53,39 @@ const getAll = async (req, res) => {
 
   try {
     const result = await RoomType.find({ createdBy: id, deleted: false });
-    res.status(200).send({
-      result,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const update = async (req, res) => {
- 
   const roomType = req.body.roomType.toLowerCase();
   const roomCategory = req.body.roomCategory;
 
   try {
-
     const existingRoom = await RoomType.findOne({
       roomType,
       roomCategory,
+      deleted: false,
     });
 
     if (existingRoom) {
-      return res.status(400).json({
-        status: 400,
-        message: "This room type and category combination already exists.",
-      });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.CONFLICT, RoomTypeMessages.EXIST)
+      );
     }
 
     let result = await RoomType.updateOne(
@@ -77,10 +97,19 @@ const update = async (req, res) => {
         },
       }
     );
-    res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, RoomTypeMessages.UPDATE, result)
+    );
   } catch (error) {
     console.log("Found Error While Update", error);
-    res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
@@ -88,17 +117,29 @@ const deleteData = async (req, res) => {
   try {
     const result = await RoomType.findById({ _id: req.params.id });
     if (!result) {
-      return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.NOT_FOUND, RoomTypeMessages.NOT_FOUND)
+      );
     } else {
       await RoomType.findByIdAndUpdate(
         { _id: req.params.id },
         { deleted: true }
       );
-      res.status(200).json({ message: messages.DATA_DELETE_SUCCESS });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.OK, RoomTypeMessages.DELETE)
+      );
     }
   } catch (error) {
     console.log("Error =>", error);
-    res.status(400).json({ message: messages.DATA_DELETE_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 export default { add, getAll, update, deleteData };

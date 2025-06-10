@@ -4,11 +4,14 @@ import CanteenInventoryPurches from "../model/CanteenInventoryPurches.js";
 import User from "../model/User.js";
 import messages from "../constants/message.js";
 import CanteenInventory from "../model/CanteenInventory.js";
+import { statusCodes } from "../core/constant.js";
+import {
+  commonMessage,
+  canteenInventoryConsumeMessages,
+} from "../core/messages.js";
+import { createResponse, sendResponse } from "../helper/ResponseHelper.js";
 
 const add = async (req, res) => {
-  console.log("In CanteenInventoryConsume Controller..");
-  console.log("Req Id =>", req.params.id);
-  console.log("Req Body =>", req.body);
   let remaning = 0;
 
   try {
@@ -21,16 +24,20 @@ const add = async (req, res) => {
       createdBy: req.params.id,
       deleted: false,
     }).sort({ date: -1 });
-    console.log("latestConsume===>", latestConsume);
+ 
 
     let purchaseData = await CanteenInventoryPurches.findOne({
       productName,
       createdBy: req.params.id,
     });
     if (!purchaseData) {
-      return res
-        .status(404)
-        .json({ message: "Product not found in inventory." });
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.NOT_FOUND,
+          canteenInventoryConsumeMessages.NOT_FOUND
+        )
+      );
     }
 
     if (!latestConsume) {
@@ -40,14 +47,22 @@ const add = async (req, res) => {
     }
 
     const purchaseQuantity = purchaseData.quantity;
-    console.log("purchaseQuantity => ", purchaseQuantity);
+
 
     //check if consume quantity is more than purchase and remaning quantity..
     if (Number(quantity) > purchaseQuantity || remaning < 0) {
-      return res.status(205).json({
-        message:
-          "Consume quantity cannot be greater than remaining or purchase quantity.",
-      });
+      // return res.status(205).json({
+      //   message:
+      //     "Consume quantity cannot be greater than remaining or purchase quantity.",
+      // });
+
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.BAD_REQ,
+          canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+        )
+      );
     }
 
     const newConsume = new CanteenInventoryConsume({
@@ -60,45 +75,53 @@ const add = async (req, res) => {
     });
     await newConsume.save();
 
-    console.log("newConsume==>", newConsume);
-    res.status(201).json({ message: "Data submitted successfully." });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, canteenInventoryConsumeMessages.ADD)
+    );
   } catch (error) {
     console.log("Error Found While Add Data", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const index = async (req, res) => {
-  console.log("In CanteenInventoryConsume Controller..");
-  console.log("Id =>", req.params.id);
-
   try {
     let result = await CanteenInventoryConsume.find({
       createdBy: req.params.id,
       deleted: false,
     }).populate("productId", "mesurment");
-    console.log("result=>", result);
+
     let total_recodes = await CanteenInventoryConsume.countDocuments({
       createdBy: req.params.id,
       deleted: false,
     });
-    res.status(200).send({
-      result,
-      totalRecodes: total_recodes,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.log("Error =>", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const view = async (req, res) => {
-  console.log("In CanteenInventoryConsume Controller..");
-  console.log("Id=>", req.params.id);
+
 
   let result = await CanteenInventoryConsume.findById({ _id: req.params.id });
-  console.log("result=>", result);
 
   if (!result) {
     return res.status(404).json({ message: "Product is not Found.." });
@@ -107,7 +130,7 @@ const view = async (req, res) => {
 };
 
 const edit = async (req, res) => {
-  console.log("on edit consume quantity id =>", req.params.id);
+
   const { productName, quantity, date } = req.body;
 
   const currentEntry = await CanteenInventoryConsume.findById(req.params.id);
@@ -120,12 +143,15 @@ const edit = async (req, res) => {
 
   if (previousEntry) {
     if (quantity > previousEntry.remaning) {
-      return res.status(400).json({
-        message: "Consume quantity cannot be greater than remaining quantity.",
-      });
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.BAD_REQ,
+          canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY1
+        )
+      );
     } else {
       let remaning = previousEntry.remaning - Number(quantity);
-      console.log("remaning => ", remaning);
 
       const updatedEntry = await CanteenInventoryConsume.findByIdAndUpdate(
         req.params.id,
@@ -138,28 +164,34 @@ const edit = async (req, res) => {
         },
         { new: true }
       );
-      console.log("updatedEntry==>", updatedEntry);
-      res.status(200).json({ message: messages.DATA_UPDATED_SUCCESS });
+
+      return sendResponse(
+        res,
+        createResponse(statusCodes.OK, canteenInventoryConsumeMessages.UPDATE)
+      );
     }
   } else {
     let purchaseData = await CanteenInventoryPurches.findOne({
       productName: productName,
       createdBy: currentEntry.createdBy,
     });
-    console.log("purchaseData  ======> ", purchaseData);
+ 
 
     const purchaseQuantity = purchaseData.quantity;
-    console.log("purchaseQuantity => ", purchaseQuantity);
+
 
     if (Number(quantity) > purchaseQuantity) {
-      return res.status(205).json({
-        message:
-          "Consume quantity cannot be greater than remaining or purchase quantity.",
-      });
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.BAD_REQ,
+          canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+        )
+      );
     }
 
     let remaning = purchaseQuantity - Number(quantity);
-    console.log("remaning => ", remaning);
+  
 
     const updatedEntry = await CanteenInventoryConsume.findByIdAndUpdate(
       req.params.id,
@@ -172,100 +204,45 @@ const edit = async (req, res) => {
       },
       { new: true }
     );
-    console.log("updatedEntry==>", updatedEntry);
-    res.status(200).json({ message: messages.DATA_UPDATED_SUCCESS });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, canteenInventoryConsumeMessages.UPDATE)
+    );
   }
-
-  // try {
-  //   const currentConsumeQut = await CanteenInventoryConsume.findById(
-  //     req.params.id
-  //   );
-  //   console.log("currentConsumeQut  =====> ", currentConsumeQut);
-
-  //   const purchaseData = await CanteenInventoryPurches.findOne({
-  //     productName: req.body.productName,
-  //     createdBy: currentConsumeQut.createdBy,
-  //   });
-  //   console.log("purchaseData  ======> ", purchaseData);
-
-  //   const purchaseQuantity = purchaseData.quantity;
-  //   console.log("purchaseQuantity => ", purchaseQuantity);
-
-  //   if (
-  //     Number(req.body.quantity) > purchaseQuantity ||
-  //     Number(req.body.quantity) > currentConsumeQut.remaning
-  //   ) {
-  //     return res.status(205).json({
-  //       message:
-  //         "Consume quantity cannot be greater than remaining or purchase quantity.",
-  //     });
-  //   }
-
-  //   let remqut;
-  //   if (Number(req.body.quantity) > currentConsumeQut.quantity) {
-  //     let diff = Number(req.body.quantity) - currentConsumeQut.quantity;
-  //     console.log(
-  //       "diff => when consume quatity grater then current consume quanity =>",
-  //       diff
-  //     );
-
-  //     remqut = currentConsumeQut.remaning - diff;
-  //     console.log(
-  //       "remqut => when consume quatity grater then current consume quanity =>",
-  //       remqut
-  //     );
-  //   } else {
-  //     let diff = currentConsumeQut.quantity - Number(req.body.quantity);
-  //     console.log(
-  //       "diff => when consume quatity less then current consume quanity =>",
-  //       diff
-  //     );
-
-  //     remqut = diff;
-  //     console.log(
-  //       "remqut => when consume quatity less then current consume quanity =>",
-  //       remqut
-  //     );
-  //   }
-
-  //   let result = await CanteenInventoryConsume.updateOne(
-  //     { _id: req.params.id },
-  //     {
-  //       $set: {
-  //         quantity: req.body.quantity,
-  //         remaning: remqut,
-  //         date: req.body.date,
-  //       },
-  //     }
-  //   );
-
-  //   console.log("result==>", result);
-  //   res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
-  // } catch (error) {
-  //   console.log("Error Found ==>", error);
-  //   res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
-  // }
 };
 
 const deleteData = async (req, res) => {
-  console.log("In CanteenInventoryConsume Controller..");
-  console.log("Id=>", req.params.id);
-
   try {
     let result = await CanteenInventoryConsume.findById({ _id: req.params.id });
     if (!result) {
-      return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.NOT_FOUND,
+          canteenInventoryConsumeMessages.NOT_FOUND
+        )
+      );
     } else {
       await CanteenInventoryConsume.findByIdAndUpdate(
         { _id: req.params.id },
         { deleted: true }
       );
-      console.log("Product Details deleted successfully !!");
-      res.json({ message: "Product Details deleted successfully !!" });
+
+      return sendResponse(
+        res,
+        createResponse(statusCodes.OK, canteenInventoryConsumeMessages.DELETE)
+      );
     }
   } catch (error) {
     console.log("Error =>", error);
-    res.status(400).json({ message: messages.DATA_DELETE_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 

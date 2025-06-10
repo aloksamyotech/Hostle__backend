@@ -6,7 +6,7 @@ import AssignBeds from "../model/AssignBeds.js";
 import Hostel from "../model/Hostel.js";
 
 const add = async (req, res) => {
-  console.log("req.body :", req.body);
+ 
   const createdBy = req.params.id;
   try {
     const {
@@ -58,7 +58,7 @@ const add = async (req, res) => {
 };
 
 const index = async (req, res) => {
-  console.log("req.params.id :::", req.params.id);
+ 
   const id = req.params.id;
 
   try {
@@ -127,7 +127,7 @@ const index = async (req, res) => {
 };
 
 const getStudentData = async (req, res) => {
-  console.log("req.params.id :::", req.params.id);
+
   const id = req.params.id;
 
   try {
@@ -135,7 +135,7 @@ const getStudentData = async (req, res) => {
       createdAt: -1,
     });
 
-    console.log("for remamaing data : ", result);
+  
 
     res.status(200).send({
       result,
@@ -150,8 +150,7 @@ const getStudentData = async (req, res) => {
 const view = async (req, res) => {
   try {
     const studentId = req.params.id;
-    console.log("In view Id=====>", studentId);
-
+   
     const result = await Payment.find({ studentId }).populate("studentId");
 
     res.status(200).json({

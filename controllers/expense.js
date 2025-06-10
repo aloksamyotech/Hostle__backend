@@ -3,20 +3,15 @@ import Hostel from "../model/Hostel.js";
 import User from "../model/User.js";
 import messages from "../constants/message.js";
 import Expenditures from "../model/Expenditures.js";
+import { statusCodes } from "../core/constant.js";
+import { commonMessage, expenditureMessages } from "../core/messages.js";
+import { createResponse, sendResponse } from "../helper/ResponseHelper.js";
 
 const add = async (req, res) => {
-  console.log("In Expenditures Controller..");
-  console.log("Id =>", req.params.id);
-  console.log("Data =>", req.body);
-  console.log("Bill Img =>", req.file);
   try {
-    console.log("in try");
     const { expenseTitle, price, date } = req.body;
-
     const dateObj = new Date(date);
     const monthNamee = dateObj.toLocaleString("default", { month: "long" });
-    console.log("monthNamee==>", monthNamee);
-
     const [day, month, year] = date.split("-");
 
     const monthNames = [
@@ -35,7 +30,6 @@ const add = async (req, res) => {
     ];
 
     const monthName = monthNames[parseInt(month, 10) - 1];
-    console.log("monthName==>", monthName);
 
     let billPhoto = null;
     if (req.files && req.files.billPhoto) {
@@ -52,19 +46,23 @@ const add = async (req, res) => {
     });
     await newExpense.save();
 
-    console.log("newExpense =>", newExpense);
-    res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, expenditureMessages.ADD)
+    );
   } catch (error) {
     console.log("Error Found While Add Data", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.BAD_REQ,
+        canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+      )
+    );
   }
 };
 
 const index = async (req, res) => {
-  console.log("In Expenditures Controller..");
-  console.log("Id =>", req.params.id);
-  console.log("Query Parameters =>", req.query);
-
   try {
     const { startDate, endDate } = req.query;
     const filter = {
@@ -74,38 +72,43 @@ const index = async (req, res) => {
 
     if (startDate) {
       filter.date = { $gte: new Date(startDate) };
-      console.log("filter.date=========>", filter.date);
     }
     if (endDate) {
       if (!filter.date) {
         filter.date = {};
       }
       filter.date.$lte = new Date(endDate);
-      console.log("filter.date.$lte =========>", filter.date.$lte);
     }
 
     const result = await Expenditure.find(filter);
-    console.log("result =>", result);
 
     const total_recodes = await Expenditure.countDocuments(filter);
-    res.status(200).send({
-      result,
-      totalRecodes: total_recodes,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+    // res.status(200).send({
+    //   result,
+    //   totalRecodes: total_recodes,
+    //   message: messages.DATA_FOUND_SUCCESS,
+    // });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.log("Error =>", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.BAD_REQ,
+        canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+      )
+    );
   }
 };
 
 const monthlyExpenses = async (req, res) => {
   try {
-    console.log("In monthlyExpenses... Id=>,", req.params.id);
-
     // Fetch all expenditures created by the specified user
     const adminData = await Expenditure.find({ createdBy: req.params.id });
-    console.log("adminData =>", adminData);
 
     // Initialize an object to store total expenses for each month
     let monthlyExpenses = {
@@ -127,78 +130,34 @@ const monthlyExpenses = async (req, res) => {
     for (let expenditure of adminData) {
       const month = expenditure.monthName;
       const amount = expenditure.price;
-      console.log("month==>", month, "amount==>", amount);
 
       // Add the amount to the corresponding month's total
       if (monthlyExpenses.hasOwnProperty(month)) {
         monthlyExpenses[month] += amount;
       }
     }
-    console.log("monthlyExpenses====>", monthlyExpenses);
 
     // Respond with the aggregated monthly expenses object
     res.status(200).json({ monthlyExpenses });
   } catch (error) {
     console.log("Error =>", error);
-    res.status(500).json({ message: "Internal server error." });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.BAD_REQ,
+        canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+      )
+    );
   }
 };
 
-// const edit = async (req, res) =>{
-//     console.log("edit expense Id=>", req.params.id);
-//     console.log("edit file Data =>", req.file);
-//     try{
-
-//         const dateObj = new Date(req.body.date);
-//         const monthNamee = dateObj.toLocaleString('default', { month: 'long' });
-//         console.log("monthNamee==>",monthNamee);
-
-//         // Parse the month from the dd-mm-yyyy format date string
-//         const [day, month, year] = req.body.date.split('-');
-
-//         // Map month number to month name
-//         const monthNames = ["January", "February", "March", "April", "May", "June",
-//                             "July", "August", "September", "October", "November", "December"];
-
-//         const monthName = monthNames[parseInt(month, 10) - 1];
-//         console.log("monthName==>", monthName);
-
-//         let  result = await Expenditure.findByIdAndUpdate(
-//             {
-//                 _id : req.params.id
-//             },
-//             {
-//                 $set : {
-//                     expenseTitle : req.body.expenseTitle,
-//                     price : req.body.price,
-//                     date : req.body.date,
-//                     monthName,
-//                     billPhoto : req.file.filename,
-//                 }
-//             }
-
-//         );
-
-//         res.status(200).json({result, message : messages.DATA_UPDATED_SUCCESS});
-//     }catch(error){
-//         console.log("Found Error While Update", error);
-//         res.status(400).json({message : messages.DATA_UPDATED_FAILED});
-//     }
-// }
-
 const edit = async (req, res) => {
-  console.log("edit expense Id=>", req.params.id);
-  console.log("edit file Data =>", req.file);
-
   try {
     const dateObj = new Date(req.body.date);
     const monthNamee = dateObj.toLocaleString("default", { month: "long" });
-    console.log("monthNamee==>", monthNamee);
 
-    // Parse the month from the dd-mm-yyyy format date string
     const [day, month, year] = req.body.date.split("-");
 
-    // Map month number to month name
     const monthNames = [
       "January",
       "February",
@@ -215,12 +174,14 @@ const edit = async (req, res) => {
     ];
 
     const monthName = monthNames[parseInt(month, 10) - 1];
-    console.log("monthName==>", monthName);
 
     // Fetch existing document to get the current billPhoto
     const existingDoc = await Expenditure.findById(req.params.id);
     if (!existingDoc) {
-      return res.status(404).json({ message: "Expense not found" });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.NOT_FOUND, expenditureMessages.NOT_FOUND)
+      );
     }
 
     let billPhoto = existingDoc.billPhoto;
@@ -239,36 +200,53 @@ const edit = async (req, res) => {
           billPhoto,
         },
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
-    console.log("edit result ===>", result);
-
-    res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, expenditureMessages.UPDATE, result)
+    );
   } catch (error) {
     console.log("Found Error While Update", error);
-    res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.BAD_REQ,
+        canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+      )
+    );
   }
 };
 
 const deleteData = async (req, res) => {
   try {
-    console.log("In deleteData Id:", req.params.id);
-
     const result = await Expenditure.findById({ _id: req.params.id });
     if (!result) {
-      return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.NOT_FOUND, expenditureMessages.NOT_FOUND)
+      );
     } else {
       await Expenditure.findOneAndUpdate(
         { _id: req.params.id },
         { deleted: true }
       );
-      console.log("Expense deleted successfully !!");
-      res.status(200).json({ message: messages.DATA_DELETE_SUCCESS });
+
+      return sendResponse(
+        res,
+        createResponse(statusCodes.OK, expenditureMessages.DELETE)
+      );
     }
   } catch (error) {
     console.log("Error =>", error);
-    res.status(400).json({ message: messages.DATA_DELETE_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.BAD_REQ,
+        canteenInventoryConsumeMessages.INVALID_CONSUME_QUANTITY
+      )
+    );
   }
 };
 

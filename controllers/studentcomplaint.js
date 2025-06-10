@@ -2,12 +2,11 @@ import StudentComplaint from "../model/StudentComplaint.js";
 import StudentReservation from "../model/StudentReservation.js";
 import messages from "../constants/message.js";
 import mongoose from "mongoose";
+import { statusCodes } from "../core/constant.js";
+import { commonMessage, complaintMessages } from "../core/messages.js";
+import { createResponse, sendResponse } from "../helper/ResponseHelper.js";
 
 const add = async (req, res) => {
-  console.log("In Student Complaint Controller");
-  console.log("Req Id=>", req.params.id);
-  console.log("Req Data=>", req.body);
-
   try {
     const { studentId, datetime, problemDescription, status } = req.body;
 
@@ -20,11 +19,19 @@ const add = async (req, res) => {
     });
     await newComplaint.save();
 
-    console.log("Data Store =>", newComplaint);
-    res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, complaintMessages.ADD)
+    );
   } catch (error) {
     console.log("Error Found While add rooms", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
@@ -78,25 +85,28 @@ const index = async (req, res) => {
       },
     ]);
 
-    res.status(200).send({
-      result,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.log("Error =>", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const view = async (req, res) => {
-  console.log("In View");
-  console.log("id =>", req.params.id);
-
   let result = await StudentComplaint.findOne({ studentHosId: req.params.id });
   if (!result) {
     return res.status(404).json({ message: "No Details is Found.." });
   }
-  console.log("result=>", result);
+  
   res.status(200).json(result);
 };
 
@@ -116,42 +126,61 @@ const edit = async (req, res) => {
         },
       }
     );
-    console.log("edit complaint : ", result);
+  
 
-    res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
+    
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, complaintMessages.UPDATE)
+    );
   } catch (error) {
     console.log("Found Error While Update", error);
-    res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const deleteData = async (req, res) => {
-  console.log(" deleteData  Id:", req.params.id);
   try {
     const result = await StudentComplaint.findOne({ _id: req.params.id });
     if (!result) {
-      return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
+      return sendResponse(
+        res,
+        createResponse(statusCodes.CONFLICT, complaintMessages.EXIST)
+      );
     } else {
       await StudentComplaint.findOneAndUpdate(
         { _id: req.params.id },
         { deleted: true }
       );
-      console.log("Student Complain Details deleted successfully !!");
-      res.status(200).json({ message: messages.DATA_DELETE_SUCCESS });
+
+      return sendResponse(
+        res,
+        createResponse(statusCodes.OK, complaintMessages.DELETE)
+      );
     }
   } catch (error) {
     console.log("Error =>", error);
-    res.status(400).json({ message: messages.DATA_DELETE_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const allComplaints = async (req, res) => {
   try {
-    console.log("in allComplaints... Id", req.params.id);
-
-    // Fetch all expenditures created by the specified user
+   
     const adminData = await StudentComplaint.find({ createdBy: req.params.id });
-    console.log("adminData =>", adminData);
+  
 
     let totalComplaints = {
       complete: 0,

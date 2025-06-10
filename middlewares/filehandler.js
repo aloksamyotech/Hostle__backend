@@ -61,6 +61,8 @@ const fileHandler = () => {
     { name: "studentPhoto", maxCount: 1 },
     { name: "aadharPhoto", maxCount: 1 },
     { name: "billPhoto", maxCount: 1 },
+    { name: "purchesBillPhoto", maxCount: 1 },
+
     // { name: "csv", maxCount: 1 },
     // { name: "image", maxCount: 1 },
     // { name: "dealImage", maxCount: 1 },

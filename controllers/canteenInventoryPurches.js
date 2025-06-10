@@ -2,12 +2,14 @@ import messages from "../constants/message.js";
 import CanteenInventory from "../model/CanteenInventory.js";
 import CanteenInventoryPurches from "../model/CanteenInventoryPurches.js";
 import User from "../model/User.js";
+import { statusCodes } from "../core/constant.js";
+import {
+  commonMessage,
+  canteenInventoryPurchesMessages,
+} from "../core/messages.js";
+import { createResponse, sendResponse } from "../helper/ResponseHelper.js";
 
 const add = async (req, res) => {
-  console.log("In CanteenInventoryPurches Controller..");
-  console.log("req id =>", req.params.id);
-  console.log("req data =>", req.body);
-
   try {
     const { productName, quantity, price, date } = req.body;
 
@@ -16,10 +18,20 @@ const add = async (req, res) => {
       createdBy: req.params.id,
       deleted: false,
     });
-    console.log("data ==================>", data);
 
     if (!data) {
-      return res.status(404).json({ message: "Product is not Found.." });
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.NOT_FOUND,
+          canteenInventoryPurchesMessages.NOT_FOUND
+        )
+      );
+    }
+
+    let purchesBillPhoto = null;
+    if (req.files && req.files.purchesBillPhoto) {
+      purchesBillPhoto = `/images/${req.files.purchesBillPhoto[0].filename}`;
     }
 
     const newPurches = new CanteenInventoryPurches({
@@ -28,49 +40,61 @@ const add = async (req, res) => {
       quantity,
       price,
       date,
+      purchesBillPhoto,
       createdBy: req.params.id,
     });
     await newPurches.save();
-    console.log("newPurches==>", newPurches);
-    res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, canteenInventoryPurchesMessages.ADD)
+    );
   } catch (error) {
     console.log("Error Found While Add Data", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.INTERNAL_SERVER_ERROR,
+        messages.INTERNAL_SERVER_ERROR
+      )
+    );
   }
 };
 
 const index = async (req, res) => {
-  console.log("Index In CanteenInventoryPurches Controller..");
-  console.log("Id=>", req.params.id);
-
   try {
     let result = await CanteenInventoryPurches.find({
       createdBy: req.params.id,
       deleted: false,
     }).populate("productId", "mesurment");
-    
-    console.log("result=>", result);
+
     let total_recodes = await CanteenInventoryPurches.countDocuments({
       createdBy: req.params.id,
       deleted: false,
     });
-    res.status(200).send({
-      result,
-      totalRecodes: total_recodes,
-      message: messages.DATA_FOUND_SUCCESS,
-    });
+   
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+    );
   } catch (error) {
     console.log("Error =>", error);
-    res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.NOT_FOUND,
+        canteenInventoryPurchesMessages.NOT_FOUND
+      )
+    );
   }
 };
 
 const view = async (req, res) => {
-  console.log("In CanteenInventoryPurches Controller..");
-  console.log("Id=>", req.params.id);
+
 
   let result = await CanteenInventoryPurches.findById({ _id: req.params.id });
-  console.log("result=>", result);
+ 
 
   if (!result) {
     return res.status(404).json({ message: "Product is not Found.." });
@@ -79,10 +103,12 @@ const view = async (req, res) => {
 };
 
 const edit = async (req, res) => {
-  console.log("In CanteenInventoryPurches Controller..");
-  console.log("Id=>", req.params.id);
-
   try {
+    let purchesBillPhoto = null;
+    if (req.files && req.files.purchesBillPhoto) {
+      purchesBillPhoto = `/images/${req.files.purchesBillPhoto[0].filename}`;
+    }
+
     let result = await CanteenInventoryPurches.updateOne(
       { _id: req.params.id },
       {
@@ -91,37 +117,63 @@ const edit = async (req, res) => {
           quantity: req.body.quantity,
           price: req.body.price,
           date: req.body.date,
+          purchesBillPhoto: purchesBillPhoto,
         },
       }
     );
-    res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
-    console.log("result==>", result);
+    // res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.OK,
+        canteenInventoryPurchesMessages.UPDATE,
+        result
+      )
+    );
   } catch (error) {
     console.log("Found Error While Update", error);
-    res.status(400).json({ message: messages.DATA_UPDATED_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.NOT_FOUND,
+        canteenInventoryPurchesMessages.NOT_FOUND
+      )
+    );
   }
 };
 
 const deleteData = async (req, res) => {
-  console.log("In CanteenInventoryPurches Controller..");
-  console.log("Id=>", req.params.id);
-
   try {
     let result = await CanteenInventoryPurches.findById({ _id: req.params.id });
 
     if (!result) {
-      return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
+      return sendResponse(
+        res,
+        createResponse(
+          statusCodes.NOT_FOUND,
+          canteenInventoryPurchesMessages.NOT_FOUND
+        )
+      );
     } else {
       await CanteenInventoryPurches.findByIdAndUpdate(
         { _id: req.params.id },
         { deleted: true }
       );
-      console.log("Product Details deleted successfully !!");
-      res.status(200).json({ message: messages.DATA_DELETE_SUCCESS });
+
+      return sendResponse(
+        res,
+        createResponse(statusCodes.OK, canteenInventoryPurchesMessages.DELETE)
+      );
     }
   } catch (error) {
     console.log("Error =>", error);
-    res.status(400).json({ message: messages.DATA_DELETE_FAILED });
+    return sendResponse(
+      res,
+      createResponse(
+        statusCodes.NOT_FOUND,
+        canteenInventoryPurchesMessages.NOT_FOUND
+      )
+    );
   }
 };
 

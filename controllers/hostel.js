@@ -4,9 +4,6 @@ import User from "../model/User.js";
 import bcrypt from "bcrypt";
 
 const add = async (req, res) => {
-  console.log("In hostel controller");
-  console.log("Data =>", req.body);
-  console.log("Hos Img =>", req.files);
   try {
     const {
       hostelName,
@@ -22,7 +19,6 @@ const add = async (req, res) => {
     const existingEmail = await Hostel.findOne({ email });
 
     if (existingEmail) {
-      console.log("Email is Already Exist!!");
       res.status(401).json({ message: messages.EMAIL_ALREADY_EXISTS });
       return;
     }
@@ -51,9 +47,9 @@ const add = async (req, res) => {
 const index = async (req, res) => {
   try {
     let result = await Hostel.find({ deleted: false });
-    console.log("Result =>", result);
+
     let total_recodes = await Hostel.countDocuments({ deleted: false });
-    console.log("total_recodes==>", total_recodes);
+
     res.status(200).send({
       result,
       totalRecodes: total_recodes,
@@ -66,11 +62,8 @@ const index = async (req, res) => {
 };
 
 const view = async (req, res) => {
-  console.log("In View Hostel");
-  console.log("id: ", req.params.id);
   try {
     const result = await Hostel.findById({ _id: req.params.id });
-    console.log("result in view ==>", result);
 
     if (!result) {
       return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
@@ -140,17 +133,12 @@ const deleteData = async (req, res) => {
 };
 
 const roomsCount = async (req, res) => {
-  console.log("In roomCount Id=>", req.params.id);
-
   try {
-    console.log("try block");
     let data = await User.findByIdAndUpdate({ _id: req.params.id });
-    console.log("Found Admin==>", data);
 
     let hostel = data.hostelId;
 
     let hostelData = await Hostel.findOne({ uniqueCode: hostel });
-    console.log("hostelData=>", hostelData);
 
     let noOfRooms = hostelData.noOfRoom;
 
@@ -163,18 +151,13 @@ const roomsCount = async (req, res) => {
 
 const bedsCount = async (req, res) => {
   try {
-    console.log("In try Id=>", req.params.id);
-
     let data = await User.findById({ _id: req.params.id });
-    console.log(" admin data=>", data);
 
     let hostelId = data.hostelId;
 
     let hostelData = await Hostel.findOne({ uniqueCode: hostelId });
-    console.log("hostelData =>", hostelData);
 
     let avabeds = hostelData.availableBeds;
-    console.log("avabeds=>", avabeds);
 
     res.status(200).send({ avabeds, message: messages.DATA_FOUND_SUCCESS });
   } catch (error) {
@@ -184,7 +167,6 @@ const bedsCount = async (req, res) => {
 };
 
 const addNew = async (req, res) => {
-  console.log("---------------------- add hostel ----------------------------");
   try {
     const {
       hostelName,
@@ -196,13 +178,9 @@ const addNew = async (req, res) => {
       address,
     } = req.body;
 
-    console.log("req.body===>", req.body);
-    console.log("req.files===>", req.files);
-
     const existingEmail = await Hostel.findOne({ email });
 
     if (existingEmail) {
-      console.log("This EmailId is Already Exist!!");
       res.status(401).json({ message: messages.EMAIL_ALREADY_EXISTS });
       return;
     }
@@ -210,7 +188,6 @@ const addNew = async (req, res) => {
     const existingHostel = await Hostel.findOne({ hostelPhoneNumber });
 
     if (existingHostel) {
-      console.log("ContactNo is Already Exist!!");
       res.status(401).json({ message: "Hostel ContactNo is Already Exist!!" });
       return;
     }
@@ -245,7 +222,7 @@ const addNew = async (req, res) => {
       role: "Customer",
     });
     await newHostel.save();
-    console.log("newHostel=====>", newHostel);
+
     res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
   } catch (error) {
     console.log("Error =>", error);
@@ -255,8 +232,6 @@ const addNew = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    console.log("chnage password req.body ===>", req.body);
-
     const { email, currentPassword, newPassword, confirmPassword } = req.body;
 
     if (email === "sunrisehostel@gmail.com") {
@@ -266,7 +241,6 @@ export const changePassword = async (req, res) => {
     }
 
     const userExists = await Hostel.findOne({ email: email });
-    console.log("userExists ===>", userExists);
 
     if (!userExists) {
       return res.status(404).json({
@@ -298,8 +272,6 @@ export const changePassword = async (req, res) => {
       { $set: { password: hashPassword } },
       { new: true }
     );
-
-    console.log("updatedUser ===>", updatedUser);
 
     return res.status(200).json({
       message: "Password Change Successfully",

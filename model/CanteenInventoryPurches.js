@@ -11,6 +11,7 @@ const CanteenInventoryPurchesSchema = new mongoose.Schema({
   quantity: { type: Number, require: true },
   price: { type: String, require: true },
   date: { type: Date, require: true },
+  purchesBillPhoto: { type: String },
   deleted: { type: Boolean, default: false },
   createdBy: {
     type: mongoose.Schema.ObjectId,

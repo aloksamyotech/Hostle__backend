@@ -13,11 +13,6 @@ import room from "./room.js";
 import Payment from "../model/Payment.js";
 
 const add = async (req, res) => {
-  console.log("In  StudentReservation controller");
-  console.log("On Hostel Id =>", req.params.id);
-  console.log("Req Data =>", req.body);
-  console.log("Files Data =>", req.files);
-
   try {
     const {
       studentName,
@@ -57,25 +52,16 @@ const add = async (req, res) => {
       (end.getFullYear() - start.getFullYear()) * 12 +
       (end.getMonth() - start.getMonth()) +
       1;
-    console.log("totalMonths==>", totalMonths);
 
     const MonthlyTotalAmmount =
       Number(libraryAmount) + Number(foodAmount) + Number(hostelRent);
-    console.log("MonthlyTotalAmmount ==>", MonthlyTotalAmmount);
 
-    // Calculate the total amount for all months
     const totalAmount = MonthlyTotalAmmount * totalMonths;
-    console.log("totalAmount==>", totalAmount);
 
-    // const pendingAmount = totalAmount - Number(depositAmount);
-    // console.log("pendingAmount==>",pendingAmount);
-
-    // Check room availability
     const room = await Room.findOne({
       roomNumber: roomNumber,
       createdBy: req.params.id,
     });
-    console.log("room =>", room);
 
     if (!room) {
       return res.status(404).json({ message: "Room not found." });
@@ -91,7 +77,6 @@ const add = async (req, res) => {
     room.availableBeds -= 1;
 
     await room.save();
-    console.log("here---room ===>", room);
 
     const newStudentReserve = new StudentReservation({
       studentName,
@@ -119,7 +104,6 @@ const add = async (req, res) => {
       totalAmount,
       createdBy: req.params.id,
     });
-    console.log("newStudentReserve ==========>", newStudentReserve);
 
     await newStudentReserve.save();
     res.status(201).json({ message: messages.DATA_SUBMITED_SUCCESS });
@@ -129,35 +113,7 @@ const add = async (req, res) => {
   }
 };
 
-// const index = async (req, res) => {
-//   console.log("In  StudentReservation controller");
-//   console.log("In Index id==>", req.params.id);
-
-//   try {
-//     let result = await StudentReservation.find({
-//       deleted: false,
-//       createdBy: req.params.id,
-//     });
-//     console.log("All list filter with created by ===>", result);
-//     let total_recodes = await StudentReservation.countDocuments({
-//       deleted: false,
-//       createdBy: req.params.id,
-//     });
-//     console.log("total_recodes==>", total_recodes);
-//     res.status(200).send({
-//       result,
-//       totalRecodes: total_recodes,
-//       message: messages.DATA_FOUND_SUCCESS,
-//     });
-//   } catch (error) {
-//     console.log("Error =>", error);
-//     res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR });
-//   }
-// };
-
 const index = async (req, res) => {
-  console.log("In Index id==>", req.params.id);
-
   try {
     let result = await Students.find({
       deleted: false,
@@ -167,7 +123,7 @@ const index = async (req, res) => {
       createdBy: req.params.id,
       deleted: false,
     });
-    console.log("result index ===>", result);
+
     res.status(200).send({
       result,
       total_recodes,
@@ -180,9 +136,6 @@ const index = async (req, res) => {
 };
 
 const view = async (req, res) => {
-  console.log("In  StudentReservation controller");
-  console.log("id founddddddddddddddddd =>", req.params.id);
-
   try {
     const result = await AssignBeds.findOne({
       studentId: req.params.id,
@@ -190,7 +143,7 @@ const view = async (req, res) => {
     if (!result) {
       return res.status(404).json({ message: messages.DATA_NOT_FOUND });
     }
-    console.log("result =>", result);
+
     res.status(200).json({ result, message: messages.DATA_FOUND_SUCCESS });
   } catch (error) {
     console.error("Error:", error);
@@ -199,11 +152,6 @@ const view = async (req, res) => {
 };
 
 const edit = async (req, res) => {
-  console.log("In StudentReservation controller for edit");
-  console.log("req.params.id =>", req.params.id);
-  console.log("req.body =>", req.body);
-  console.log("file data =>", req.files);
-
   try {
     const studentId = req.params.id;
     const {
@@ -275,10 +223,8 @@ const edit = async (req, res) => {
 
 const deleteData = async (req, res) => {
   try {
-    console.log("In  StudentReservation controller for deleteData");
-    console.log("Id:", req.params.id);
     const result = await StudentReservation.findById({ _id: req.params.id });
-    console.log("result=>", result);
+
     if (!result) {
       return res.status(404).json({ message: messages.DATA_NOT_FOUND_ERROR });
     } else {
@@ -288,7 +234,6 @@ const deleteData = async (req, res) => {
       );
 
       const currentRoom = await Room.findOne({ roomNumber: result.roomNumber });
-      console.log("currentRoom=>", currentRoom);
 
       if (currentRoom) {
         currentRoom.occupiedBeds -= 1;
@@ -296,7 +241,6 @@ const deleteData = async (req, res) => {
         await currentRoom.save();
       }
 
-      console.log("Student Details deleted successfully !!");
       res.status(200).json({ message: messages.DATA_DELETE_SUCCESS });
     }
   } catch (error) {
@@ -309,8 +253,6 @@ const updateStatus = async (req, res) => {
   const id = req.params.id;
   const status = req.body.status;
 
-  console.log("id=>", req.params.id, "status=>", req.body.status);
-
   try {
     let result = await StudentReservation.updateOne(
       { _id: id },
@@ -320,7 +262,7 @@ const updateStatus = async (req, res) => {
         },
       }
     );
-    console.log("result==>", result);
+
     res.status(200).json({ result, message: messages.DATA_UPDATED_SUCCESS });
   } catch (error) {
     res.status(500).json({ message: messages.INTERNAL_SERVER_ERROR, error });
@@ -329,11 +271,6 @@ const updateStatus = async (req, res) => {
 
 const assignBed = async (req, res) => {
   try {
-    console.log("Assign beds to the student here ------------------");
-    console.log("req.params.id:", req.params.id);
-    console.log("req.body:", req.body);
-    console.log("req.files==================>>", req.files);
-
     const createdBy = req.params.id;
 
     const {
@@ -410,7 +347,6 @@ const assignBed = async (req, res) => {
       roomNumber: roomNumber,
     });
 
-    console.log("this is roomUpdate : ------------>", roomUpdate);
     if (!roomUpdate) {
       return res.status(404).json({ message: "Room not found" });
     }
@@ -455,7 +391,6 @@ const assignBed = async (req, res) => {
     roomUpdate.occupiedBeds = roomUpdate.noOfBeds - roomUpdate.availableBeds;
 
     await roomUpdate.save();
-    console.log("-------- updated room after --------->", roomUpdate);
 
     res.status(201).json({
       message: "Bed assigned successfully!",
@@ -468,9 +403,6 @@ const assignBed = async (req, res) => {
 };
 
 const editAssignBed = async (req, res) => {
-  console.log("--------- In editAssignBed --------------");
-  console.log("req.body :", req.body);
-
   try {
     const { id, hostelId } = req.params;
     const {
@@ -490,14 +422,12 @@ const editAssignBed = async (req, res) => {
     } = req.body;
 
     const existingAssignment = await AssignBeds.findById(id);
-    console.log("this is existingAssignment :", existingAssignment);
 
     if (!existingAssignment) {
       return res.status(404).json({ message: "Assigned bed record not found" });
     }
 
     const previousRoom = await Room.findById(existingAssignment.roomId);
-    console.log("previousRoom :", previousRoom);
 
     if (previousRoom) {
       const prevBedIndex = previousRoom.beds.findIndex(
@@ -514,8 +444,6 @@ const editAssignBed = async (req, res) => {
         await previousRoom.save();
       }
     }
-
-    console.log("previousRoom after update :", previousRoom);
 
     // 3. Find the new room
     const newRoom = await Room.findOne({
@@ -573,8 +501,6 @@ const editAssignBed = async (req, res) => {
       studentId: existingAssignment.studentId,
     }).sort({ createdAt: -1 });
 
-    console.log("this is latestPayment :", latestPayment);
-
     if (latestPayment) {
       const updatedtotalRent = totalRent;
       const paidAmt =
@@ -629,41 +555,6 @@ const getStudent = async (req, res) => {
     const studentId = req.params.id;
 
     const student = await AssignBeds.findOne({ studentId: studentId });
-    console.log("----------- student ----------------->", student);
-
-    // const student = await AssignBeds.aggregate([
-    //   {
-    //     $match: {
-    //       studentId: studentId,
-    //     },
-    //   },
-    //   {
-    //     $lookup: {
-    //       from: "studentpayments",
-    //       localField: "studentId",
-    //       foreignField: "studentId",
-    //       as: "studentData",
-    //     },
-    //   },
-    //   {
-    //     $unwind: "$studentData",
-    //   },
-    //   {
-    //     $project: {
-    //       roomType: 1,
-    //       roomNumber: 1,
-    //       bedNumber: 1,
-    //       roomRent: 1,
-    //       stayMonths: 1,
-    //       totalRent: 1,
-    //       foodFee: 1,
-    //       libraryFee: 1,
-    //       studentData: {
-    //         remainingAmount: 1,
-    //       },
-    //     },
-    //   },
-    // ]);
 
     res.status(200).json({
       success: true,

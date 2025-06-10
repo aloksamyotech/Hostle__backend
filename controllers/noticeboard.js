@@ -4,10 +4,7 @@ import messages from "../constants/message.js";
 import User from "../model/User.js";
 
 const add = async(req,res) => {
-    console.log("in noticeboard controller..");
-    console.log("req id=>",req.params.id);
-    console.log("req data=>",req.body);
-
+   
     try{
         const { noticeTitle, description, dateTime } = req.body;
         
@@ -18,7 +15,7 @@ const add = async(req,res) => {
             createdBy : req.params.id
         });
         await newNotice.save();
-        console.log("newNotice=>",newNotice);
+       
         res.status(201).json({message : messages.DATA_SUBMITED_SUCCESS});
     }catch(error){
         res.status(500).json({message : messages.INTERNAL_SERVER_ERROR});
@@ -26,15 +23,14 @@ const add = async(req,res) => {
 }
 
 const index = async (req,res) => {
-    console.log("in noticeboard controller..");
-    console.log("Id==>",req.params.id);
+ 
 
     try{
         let result = await NoticeBoard.find({createdBy : req.params.id, deleted : false});
-        console.log("Results=>",result);
+    
 
         let total_recodes = await NoticeBoard.countDocuments({createdBy : req.params.id, deleted : false});
-        console.log("total_recodes==>",total_recodes);
+     
         
         res.status(200).send({ result, totalRecodes: total_recodes, message : messages.DATA_FOUND_SUCCESS });
 
@@ -46,9 +42,7 @@ const index = async (req,res) => {
 }
 
 const view = async (req,res) => {
-    console.log("in noticeboard controller..");
-    console.log("Id : ",req.params.id );
-
+   
     let result = await NoticeBoard.findById({_id : req.params.id});
 
     if(!result){
@@ -59,8 +53,7 @@ const view = async (req,res) => {
 }
 
 const edit = async (req,res) => {
-    console.log("in noticeboard controller..");
-    console.log("Id : ",req.params.id );
+
 
     try{
         let result = await NoticeBoard.updateOne(
@@ -82,13 +75,13 @@ const edit = async (req,res) => {
 
 const deleteData = async (req,res) => {
     try{
-        console.log("Id:",req.params.id);
+      
         const result = await NoticeBoard.findById({_id : req.params.id});
         if(!result){
           return res.status(404).json({message :' data is not found !!'});
         }else{
           await NoticeBoard.findByIdAndUpdate({_id : req.params.id},{deleted : true});
-          console.log("Data deleted successfully !!");
+       
           res.json({message : "Data deleted successfully !!"});
         }
       }catch(error){

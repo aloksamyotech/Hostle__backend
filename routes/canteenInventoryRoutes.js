@@ -9,6 +9,7 @@ router.put('/edit/:id',canteeninventory.edit);
 router.delete('/delete/:id',canteeninventory.deleteData);
 
 router.post('/importFile/:id',canteeninventory.importFileData);
+router.get('/inventoryReport',canteeninventory.inventoryReport);    
 
 
 export default router;
