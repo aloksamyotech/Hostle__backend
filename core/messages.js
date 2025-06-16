@@ -58,6 +58,7 @@ export const canteenInventoryMessages = {
   DELETE: "Canteen Inventory Delete Successfully",
   NOT_FOUND: "Canteen Inventory Not Found",
   EXIST: "Canteen Inventory is Already Exist",
+  UPLOADSUCCESS: "Canteen Inventory Uploaded Successfully"
 };
 
 export const canteenInventoryPurchesMessages = {

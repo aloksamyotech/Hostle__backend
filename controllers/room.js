@@ -82,25 +82,38 @@ const index = async (req, res) => {
   try {
     let result = await Room.find({ deleted: false, createdBy: req.params.id });
 
-    let total_recodes = await Room.countDocuments({
+    let total_records = await Room.countDocuments({
       deleted: false,
       createdBy: req.params.id,
     });
 
-    const totalAvailableBeds = result.reduce(
-      (sum, room) => sum + room.availableBeds,
-      0
-    );
+    const result1 = await Room.aggregate([
+      {
+        $match: {
+          deleted: false,
+          createdBy: new mongoose.Types.ObjectId(req.params.id),
+        },
+      },
+      { $unwind: "$beds" },
+      { $match: { "beds.status": "available" } },
+      { $count: "totalAvailableBeds" },
+    ]);
+
+    const totalAvailableBeds = result1[0]?.totalAvailableBeds || 0;
 
     let availableRoomCount = await Room.countDocuments({
       deleted: false,
       createdBy: req.params.id,
-      availableBeds: { $ne: 0 },
+      beds: { $elemMatch: { status: "available" } },
     });
 
     return sendResponse(
       res,
-      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result, {
+        total_records,
+        availableRoomCount,
+        totalAvailableBeds,
+      })
     );
   } catch (error) {
     console.log("Error =>", error);
@@ -125,7 +138,7 @@ const view = async (req, res) => {
     }
     return sendResponse(
       res,
-      createResponse(statusCodes.OK, commonMessage.SUCCESS)
+      createResponse(statusCodes.OK, commonMessage.SUCCESS, result)
     );
   } catch (error) {
     console.error("Error:", error);
@@ -306,8 +319,6 @@ const calculateBeds = async (req, res) => {
       hostelsData.push(hostelData);
     }
 
-   
-
     res
       .status(200)
       .json({ hostelsData, hostelNames, message: "Data found successfully." });
@@ -318,10 +329,7 @@ const calculateBeds = async (req, res) => {
 };
 
 const roomData = async (req, res) => {
-
   const { hostelId, roomId } = req.params;
-
- 
 
   try {
     const room = await Room.findOne({
@@ -333,7 +341,6 @@ const roomData = async (req, res) => {
     if (!room) {
       return res.status(404).json({ message: "Room not found." });
     }
-
 
     res.status(200).json({
       room,

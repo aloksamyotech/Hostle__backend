@@ -121,8 +121,6 @@ const edit = async (req, res) => {
 };
 
 const deleteData = async (req, res) => {
-
-
   try {
     let result = await CanteenInventory.findById({ _id: req.params.id });
 
@@ -153,28 +151,87 @@ const deleteData = async (req, res) => {
   }
 };
 
+// const importFileData = async (req, res) => {
+//   const items = req.body;
+
+//   if (!items || !Array.isArray(items)) {
+//     return res.status(400).send({ message: "Invalid data format" });
+//   }
+
+//   try {
+//     const normalizedItems = items.map((item) => ({
+//       productName: item["productName"],
+//       mesurment: item["mesurment"],
+//       createdBy: req.params.id,
+//     }));
+
+//     await CanteenInventory.insertMany(normalizedItems);
+//     res.status(200).send({ message: "Inventory items imported successfully" });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send({ message: "Failed to import items" });
+//   }
+// };
+
 const importFileData = async (req, res) => {
   const items = req.body;
+  const userId = req.params.id;
 
-  if (!items || !Array.isArray(items)) {
-    return res.status(400).send({ message: "Invalid data format" });
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).send({ message: "Please upload valid data." });
   }
 
   try {
- 
-
-    const normalizedItems = items.map((item) => ({
-      productName: item["productName"],
-      mesurment: item["mesurment"],
-      createdBy: req.params.id,
+    // Prepare items to insert
+    const newItems = items.map((item) => ({
+      productName: item.productName,
+      mesurment: item.mesurment,
+      createdBy: userId,
     }));
 
- 
-    await CanteenInventory.insertMany(normalizedItems);
-    res.status(200).send({ message: "Inventory items imported successfully" });
+    // Find existing items in database
+    const existingItems = await CanteenInventory.find({
+      createdBy: userId,
+      $or: newItems.map((item) => ({
+        productName: item.productName,
+        mesurment: item.mesurment,
+      })),
+    });
+
+    // Create a set of existing items to skip duplicates
+    const existingSet = new Set(
+      existingItems.map((item) => `${item.productName}_${item.mesurment}`)
+    );
+
+    // Only keep items that are not in the database
+    const itemsToInsert = newItems.filter(
+      (item) => !existingSet.has(`${item.productName}_${item.mesurment}`)
+    );
+
+    // Insert new unique items
+    if (itemsToInsert.length > 0) {
+      await CanteenInventory.insertMany(itemsToInsert);
+    }
+
+    // res.status(200).send({
+    //   message: "Upload complete",
+    //   added: itemsToInsert.length,
+    //   skipped: newItems.length - itemsToInsert.length,
+    // });
+
+    return sendResponse(
+      res,
+      createResponse(statusCodes.CREATED, {
+        message: `Successfully uploaded ${
+          itemsToInsert.length
+        } items and skipped ${
+          newItems.length - itemsToInsert.length
+        } duplicates.`,
+      })
+    );
   } catch (error) {
     console.error(error);
-    res.status(500).send({ message: "Failed to import items" });
+    res.status(500).send({ message: "Something went wrong while uploading." });
   }
 };
 
@@ -219,8 +276,6 @@ const inventoryReport = async (req, res) => {
         };
       })
     );
-
- 
 
     res.status(200).send({
       inventoryData,
