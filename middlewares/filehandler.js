@@ -3,7 +3,8 @@ import multer from "multer";
 import path from "path";
 
 const fileHandler = () => {
-  //access storage for customize file name
+  console.log("in fileHandler");
+
   const uploadDir = path.join(process.cwd(), "uploads", "images");
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -34,6 +35,9 @@ const fileHandler = () => {
       file.mimetype === "image/jpg" ||
       file.mimetype === "image/png" ||
       file.mimetype === "text/csv" ||
+      file.mimetype === "text/PNG" ||
+      file.mimetype === "text/JPEG" ||
+      file.mimetype === "text/JPG" ||
       file.mimetype ===
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ) {
