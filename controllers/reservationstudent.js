@@ -138,7 +138,7 @@ const index = async (req, res) => {
 const view = async (req, res) => {
   try {
     const result = await AssignBeds.findOne({
-      studentId: req.params.id,
+      _id: req.params.id,
     }).populate("studentId");
     if (!result) {
       return res.status(404).json({ message: messages.DATA_NOT_FOUND });
@@ -300,6 +300,7 @@ const assignBed = async (req, res) => {
       mailId,
       courseOccupation,
       address,
+      studentId,
     } = req.body;
 
     let studentPhoto = null;
@@ -313,33 +314,36 @@ const assignBed = async (req, res) => {
       aadharPhoto = `/images/${req.files.aadharPhoto[0].filename}`;
     }
 
-    const existingStudent = await Students.findOne({ studentContact });
-    if (existingStudent) {
-      return res.status(400).json({
-        message: "A student with this contact number already exists.",
-      });
+    let studentIdFromDB = studentId;
+
+    if (!studentIdFromDB) {
+      const existingStudent = await Students.findOne({ studentContact });
+
+      if (existingStudent) {
+        studentIdFromDB = existingStudent._id;
+      } else {
+        const newStudent = new Students({
+          studentName,
+          studentContact,
+          fatherName,
+          fatherContact,
+          guardianName,
+          guardianContactNo,
+          guardiansAddress,
+          dob,
+          gender,
+          mailId,
+          courseOccupation,
+          address,
+          studentPhoto,
+          aadharPhoto,
+          createdBy,
+        });
+
+        await newStudent.save();
+        studentIdFromDB = newStudent._id;
+      }
     }
-
-    // ✅ Step 2: Create new student
-    const newStudent = new Students({
-      studentName,
-      studentContact,
-      fatherName,
-      fatherContact,
-      guardianName,
-      guardianContactNo,
-      guardiansAddress,
-      dob,
-      gender,
-      mailId,
-      courseOccupation,
-      address,
-      studentPhoto,
-      aadharPhoto,
-      createdBy,
-    });
-
-    await newStudent.save();
 
     // ✅ Step 3: Find room and check for availability
     const roomUpdate = await Room.findOne({
@@ -373,7 +377,7 @@ const assignBed = async (req, res) => {
       advanceAmount,
       discount,
       createdBy,
-      studentId: newStudent._id,
+      studentId: studentIdFromDB,
       roomId: roomUpdate._id,
     });
 
@@ -385,7 +389,8 @@ const assignBed = async (req, res) => {
     );
 
     roomUpdate.beds[bedIndex].status = "occupied";
-    roomUpdate.beds[bedIndex].studentId = newStudent._id;
+    roomUpdate.beds[bedIndex].studentId = studentIdFromDB;
+    roomUpdate.beds[bedIndex].reservationId = assignedBedData._id;
 
     roomUpdate.availableBeds = roomUpdate.availableBeds - 1;
     roomUpdate.occupiedBeds = roomUpdate.noOfBeds - roomUpdate.availableBeds;
@@ -498,7 +503,7 @@ const editAssignBed = async (req, res) => {
 
     // 6. Update the student record if needed
     const latestPayment = await Payment.findOne({
-      studentId: existingAssignment.studentId,
+      reservationId: existingAssignment._id,
     }).sort({ createdAt: -1 });
 
     if (latestPayment) {
@@ -596,6 +601,26 @@ export const activeDeactiveUser = async (req, res) => {
   }
 };
 
+const getStudentByContact = async (req, res) => {
+  try {
+    const contact = req.params.contact;
+
+    const student = await Students.findOne({ studentContact: contact });
+
+    res.status(200).json({
+      success: true,
+      data: student,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
 export default {
   add,
   view,
@@ -608,4 +633,5 @@ export default {
   getStudent,
   editAssignBed,
   activeDeactiveUser,
+  getStudentByContact,
 };

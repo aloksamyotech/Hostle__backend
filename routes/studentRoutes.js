@@ -5,12 +5,11 @@ import { Image } from "../utils/upload.js";
 
 import auth from "../middlewares/auth.js";
 
-router.post('/add/:adminId', Image, student.add);
-router.get('/list/:id', student.index);
-router.get('/view/:id', student.view);
-router.put('/edit/:id', Image, student.edit);
-router.delete('/delete/:id',  student.deleteData);
-
-router.get('/allStudentCount',student.countStudent);
+router.post("/add/:adminId", Image, student.add);
+router.get("/list/:id", student.index);
+router.get("/view/:id", student.view);
+router.put("/edit/:id", Image, student.edit);
+router.delete("/delete/:id", student.deleteData);
+router.get("/allStudentCount", student.countStudent);
 
 export default router;

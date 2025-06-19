@@ -4,13 +4,15 @@ import mongoose from "mongoose";
 import Students from "../model/Students.js";
 import AssignBeds from "../model/AssignBeds.js";
 import Hostel from "../model/Hostel.js";
+import Room from "../model/Room.js";
 
 const add = async (req, res) => {
- 
   const createdBy = req.params.id;
+
   try {
     const {
       studentId,
+      reservationId,
       totalRent,
       finalTotalRent,
       advanceAmount,
@@ -25,6 +27,7 @@ const add = async (req, res) => {
 
     const newPayment = new Payment({
       studentId,
+      reservationId,
       totalRent,
       finalTotalRent,
       advanceAmount,
@@ -39,12 +42,43 @@ const add = async (req, res) => {
 
     const savedPayment = await newPayment.save();
 
+    // if (paymentStatus === "paid") {
+    //   await AssignBeds.findByIdAndUpdate(
+    //     reservationId,
+    //     { paymentStatus: "paid" },
+    //     { new: true }
+    //   );
+    // }
+
     if (paymentStatus === "paid") {
-      await Students.findByIdAndUpdate(
-        studentId,
+      const updatedReservation = await AssignBeds.findByIdAndUpdate(
+        reservationId,
         { paymentStatus: "paid" },
         { new: true }
       );
+
+      if (updatedReservation) {
+        const room = await Room.findById(updatedReservation.roomId);
+
+        if (room) {
+          const bedIndex = room.beds.findIndex(
+            (bed) => bed.bedNumber === Number(updatedReservation.bedNumber)
+          );
+
+          if (bedIndex !== -1) {
+            // Update specific bed fields
+            room.beds[bedIndex].status = "available";
+            room.beds[bedIndex].studentId = null;
+            room.beds[bedIndex].reservationId = null;
+
+            // Update bed counters
+            room.availableBeds += 1;
+            room.occupiedBeds = room.noOfBeds - room.availableBeds;
+
+            await room.save();
+          }
+        }
+      }
     }
 
     res.status(201).json({
@@ -58,7 +92,6 @@ const add = async (req, res) => {
 };
 
 const index = async (req, res) => {
- 
   const id = req.params.id;
 
   try {
@@ -75,8 +108,8 @@ const index = async (req, res) => {
       {
         $lookup: {
           from: "assignbeds",
-          localField: "studentId",
-          foreignField: "studentId",
+          localField: "reservationId",
+          foreignField: "_id",
           as: "bedData",
         },
       },
@@ -127,15 +160,12 @@ const index = async (req, res) => {
 };
 
 const getStudentData = async (req, res) => {
-
   const id = req.params.id;
 
   try {
     const result = await Payment.findOne({ studentId: id }).sort({
       createdAt: -1,
     });
-
-  
 
     res.status(200).send({
       result,
@@ -149,13 +179,12 @@ const getStudentData = async (req, res) => {
 
 const view = async (req, res) => {
   try {
-    const studentId = req.params.id;
-   
-    const result = await Payment.find({ studentId }).populate("studentId");
+    const reservationId = req.params.id;
+
+    const result = await Payment.find({ reservationId }).populate("studentId");
 
     res.status(200).json({
       result,
-
       message: messages.DATA_FOUND_SUCCESS,
     });
   } catch (error) {
@@ -192,4 +221,32 @@ const paymentDataById = async (req, res) => {
   }
 };
 
-export default { add, index, view, getStudentData, paymentDataById };
+const getLatestPaymentByReservationId = async (req, res) => {
+  try {
+    const reservationId = req.params.id;
+
+    const latestPayment = await Payment.findOne({ reservationId }).sort({
+      createdAt: -1,
+    });
+
+    if (!latestPayment) {
+      return res
+        .status(404)
+        .json({ message: "No payment found for this reservation." });
+    }
+
+    res.status(200).json(latestPayment);
+  } catch (error) {
+    console.error("Error fetching latest payment:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export default {
+  add,
+  index,
+  view,
+  getStudentData,
+  paymentDataById,
+  getLatestPaymentByReservationId,
+};

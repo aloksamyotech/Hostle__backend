@@ -60,6 +60,10 @@ const AssignBedSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    paymentStatus: {
+      type: String,
+      default: "pending",
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hostel",

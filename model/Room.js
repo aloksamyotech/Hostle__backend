@@ -8,6 +8,11 @@ const BedSchema = new mongoose.Schema(
       ref: "Student",
       default: null,
     },
+    reservationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AssignBed",
+      default: null,
+    },
     status: {
       type: String,
       enum: ["available", "occupied"],
@@ -27,7 +32,7 @@ const RoomSchema = new mongoose.Schema(
     noOfBeds: { type: Number, required: true },
     availableBeds: { type: Number, required: true },
     occupiedBeds: { type: Number, required: true, default: 0 },
-    roomphoto: { type: [String]},
+    roomphoto: { type: [String] },
     beds: { type: [BedSchema], default: [] },
     deleted: { type: Boolean, default: false },
     createdBy: {

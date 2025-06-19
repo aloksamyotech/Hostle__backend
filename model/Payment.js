@@ -7,6 +7,10 @@ const StudentPaymentSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: "Student",
     },
+    reservationId: {
+      type: mongoose.Schema.ObjectId,
+      ref: "AssignBed",
+    },
     totalRent: {
       type: Number,
       required: true,

@@ -65,10 +65,7 @@ const StudentDataSchema = new mongoose.Schema(
       default: "active",
       enum: ["active", "inactive"],
     },
-    paymentStatus: {
-      type: String,
-      default: "pending",
-    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hostel",

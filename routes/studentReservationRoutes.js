@@ -18,5 +18,6 @@ router.get("/getAllReservedStudents/:id", studentrev.allReservedStudents);
 router.get("/getStudent/:id", studentrev.getStudent);
 router.put("/update/:id/:hostelId", studentrev.editAssignBed);
 router.put("/change_status/:id", studentrev.activeDeactiveUser);
+router.get("/getStudentByContact/:contact", studentrev.getStudentByContact);
 
 export default router;
