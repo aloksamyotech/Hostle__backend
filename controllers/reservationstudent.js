@@ -519,6 +519,8 @@ const editAssignBed = async (req, res) => {
 
       if (updatedFinalTotalRent > 0) {
         latestPayment.paymentStatus = "pending";
+        updatedAssign.paymentStatus = "pending";
+        await updatedAssign.save();
       }
       await latestPayment.save();
     }
@@ -621,6 +623,26 @@ const getStudentByContact = async (req, res) => {
   }
 };
 
+const getStudentsData = async (req, res) => {
+  try {
+    const hostelId = req.params.id;
+    const student = await Students.find({ createdBy: hostelId });
+    console.log("api response :", student);
+
+    res.status(200).json({
+      success: true,
+      data: student,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
 export default {
   add,
   view,
@@ -634,4 +656,5 @@ export default {
   editAssignBed,
   activeDeactiveUser,
   getStudentByContact,
+  getStudentsData,
 };
