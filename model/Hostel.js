@@ -10,7 +10,7 @@ const HostelSchema = new mongoose.Schema(
     password: { type: String },
     address: { type: String },
     hostelphoto: { type: String },
-    aadharphoto: { type: String },
+    // aadharphoto: { type: String },
     role: { type: String, required: true },
     deleted: { type: Boolean, default: false },
   },

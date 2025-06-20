@@ -85,15 +85,15 @@ const edit = async (req, res) => {
     }
 
     let hostelphoto = hostel.hostelphoto;
-    let aadharphoto = hostel.aadharphoto;
+    // let aadharphoto = hostel.aadharphoto;
 
     if (req.files && req.files.hostelphoto) {
       hostelphoto = `/images/${req.files.hostelphoto[0].filename}`;
     }
 
-    if (req.files && req.files.aadharphoto) {
-      aadharphoto = `/images/${req.files.aadharphoto[0].filename}`;
-    }
+    // if (req.files && req.files.aadharphoto) {
+    //   aadharphoto = `/images/${req.files.aadharphoto[0].filename}`;
+    // }
 
     const result = await Hostel.updateOne(
       { _id: req.params.id },
@@ -105,7 +105,7 @@ const edit = async (req, res) => {
           ownerPhoneNumber: req.body.ownerPhoneNumber,
           address: req.body.address,
           hostelphoto,
-          aadharphoto,
+          // aadharphoto,
         },
       }
     );
